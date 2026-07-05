@@ -1,0 +1,18 @@
+id: slack
+name: Slack
+description: Sync Slack DMs and channels
+category: communication
+auth_type: oauth2
+icon: Chat
+color: "#4A154B"
+enabled: true
+provider_class: OrbitConnect::Providers::Slack
+docs_slug: slack
+oauth:
+  provider: slack
+  scopes:
+    - channels:read
+    - chat:write
+setup_steps:
+  - title: Create Slack app
+    description: Configure OAuth and install app

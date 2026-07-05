@@ -1,0 +1,10 @@
+id: github
+name: GitHub
+description: Repo + PR sync
+category: development
+auth_type: oauth2
+icon: Code
+color: "#181717"
+enabled: true
+provider_class: OrbitConnect::Providers::Github
+docs_slug: github

@@ -1,0 +1,10 @@
+id: hubspot
+name: HubSpot
+description: CRM integration
+category: crm
+auth_type: oauth2
+icon: Hub
+color: "#FF7A59"
+enabled: true
+provider_class: OrbitConnect::Providers::Hubspot
+docs_slug: hubspot

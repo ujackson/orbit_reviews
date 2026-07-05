@@ -1,0 +1,15 @@
+id: outlook
+name: Outlook
+description: Microsoft Outlook email
+category: communication
+auth_type: oauth2
+icon: Email
+color: "#0078D4"
+enabled: true
+provider_class: OrbitConnect::Providers::Outlook
+docs_slug: outlook
+oauth:
+  provider: microsoft
+  scopes:
+    - Mail.Read
+    - Mail.Send

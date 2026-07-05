@@ -1,0 +1,10 @@
+providers:
+  gmail: { enabled: true }
+  slack: { enabled: true }
+  outlook: { enabled: true }
+  hubspot: { enabled: true }
+  zendesk: { enabled: true }
+  stripe: { enabled: true }
+  notion: { enabled: true }
+  github: { enabled: true }
+  custom_api: { enabled: true }

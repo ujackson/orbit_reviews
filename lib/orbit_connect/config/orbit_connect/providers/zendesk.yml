@@ -1,0 +1,10 @@
+id: zendesk
+name: Zendesk
+description: Support tickets
+category: support
+auth_type: oauth2
+icon: SupportAgent
+color: "#03363D"
+enabled: true
+provider_class: OrbitConnect::Providers::Zendesk
+docs_slug: zendesk

@@ -1,0 +1,40 @@
+# examples:
+#   periodic_cleanup:
+#     class: CleanSoftDeletedRecordsJob
+#     queue: background
+#     args: [ 1000, { batch_size: 500 } ]
+#     schedule: every hour
+#   periodic_cleanup_with_command:
+#     command: "SoftDeletedRecord.due.delete_all"
+#     priority: 2
+#     schedule: at 5am every day
+
+development:
+  rag_index_stale_conversations:
+    class: "Ai::RagIndexStaleConversationsJob"
+    queue: default
+    args: [ { limit: 25 } ]
+    schedule: every 5 minutes
+
+production:
+  clear_solid_queue_finished_jobs:
+    command: "SolidQueue::Job.clear_finished_in_batches(sleep_between_batches: 0.3)"
+    schedule: every hour at minute 12
+
+  rag_index_stale_conversations:
+    class: "Ai::RagIndexStaleConversationsJob"
+    queue: default
+    args: [ { limit: 100 } ]
+    schedule: every 5 minutes
+
+  orbit_connect_refresh_due_connections:
+    class: "OrbitConnect::SweepRefreshableConnectionsJob"
+    schedule: every 10 minutes
+
+  orbit_connect_health_sweep:
+    class: "OrbitConnect::HealthSweepJob"
+    schedule: every 30 minutes
+
+  orbit_connect_sync_due_connections:
+    class: "OrbitConnect::SweepSyncDueConnectionsJob"
+    schedule: every 5 minutes

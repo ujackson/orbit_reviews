@@ -1,0 +1,10 @@
+id: custom_api
+name: Custom API
+description: Connect your own API
+category: development
+auth_type: api_key
+icon: Api
+color: "#64748B"
+enabled: true
+provider_class: OrbitConnect::Providers::CustomApi
+docs_slug: custom_api

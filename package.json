@@ -1,0 +1,31 @@
+{
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "vite": "^8.0.8",
+    "vite-plugin-ruby": "^5.2.1"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@inertiajs/react": "^2.3.17",
+    "@js-from-routes/client": "^1.0.4",
+    "@mui/icons-material": "^7.3.9",
+    "@mui/material": "^7.3.9",
+    "@rails/actioncable": "^8.1.300",
+    "@tanstack/react-query": "^5.90.21",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.4",
+    "date-fns": "^4.1.0",
+    "motion": "^12.35.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "sonner": "^2.0.7",
+    "typescript": "^5.9.3",
+    "zustand": "^5.0.11"
+  },
+  "scripts": {
+    "check": "tsc -p tsconfig.app.json && tsc -p tsconfig.node.json"
+  }
+}

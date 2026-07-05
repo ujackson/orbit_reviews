@@ -1,0 +1,30 @@
+default: &default
+  enabled: true
+
+  catalog:
+    source: yaml
+    cache: true
+
+  docs:
+    enabled: true
+    source: markdown
+
+  providers:
+    allow_unknown: false
+
+  ui:
+    show_disabled: true
+    show_beta_badge: true
+    show_setup_docs: true
+
+development:
+  <<: *default
+
+test:
+  <<: *default
+  catalog:
+    source: yaml
+    cache: false
+
+production:
+  <<: *default

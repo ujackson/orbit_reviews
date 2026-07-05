@@ -1,0 +1,10 @@
+source "https://rubygems.org"
+
+gemspec
+
+gem "pg"
+gem "solid_queue"
+
+group :development, :test do
+  gem "sqlite3"
+end

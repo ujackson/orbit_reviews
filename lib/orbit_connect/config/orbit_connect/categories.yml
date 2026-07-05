@@ -1,0 +1,25 @@
+categories:
+  communication:
+    label: "Communication"
+    icon: "Chat"
+    description: "Email, chat, and messaging platforms"
+
+  crm:
+    label: "CRM & Sales"
+    icon: "Business"
+    description: "Customer relationship management"
+
+  support:
+    label: "Support"
+    icon: "SupportAgent"
+    description: "Helpdesk and customer support"
+
+  productivity:
+    label: "Productivity"
+    icon: "Task"
+    description: "Project management and collaboration"
+
+  development:
+    label: "Development"
+    icon: "Code"
+    description: "Developer tools and platforms"

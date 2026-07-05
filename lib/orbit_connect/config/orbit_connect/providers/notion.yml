@@ -1,0 +1,10 @@
+id: notion
+name: Notion
+description: Notion workspace
+category: productivity
+auth_type: oauth2
+icon: Description
+color: "#000000"
+enabled: true
+provider_class: OrbitConnect::Providers::Notion
+docs_slug: notion

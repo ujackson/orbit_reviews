@@ -1,0 +1,19 @@
+id: gmail
+name: Gmail
+description: Connect Gmail inbox and send/receive emails
+category: communication
+auth_type: oauth2
+icon: Email
+color: "#EA4335"
+enabled: true
+provider_class: OrbitConnect::Providers::Gmail
+docs_slug: gmail
+oauth:
+  provider: google
+  scopes:
+    - gmail.readonly
+    - gmail.send
+    - gmail.modify
+setup_steps:
+  - title: Create Google OAuth app
+    description: Enable Gmail API and configure OAuth
