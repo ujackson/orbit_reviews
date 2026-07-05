@@ -1,5 +1,5 @@
 import { createContext, useContext, ReactNode } from 'react';
-import { usePage } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import type { Workspace } from '@/types';
 
 interface WorkspaceContextType {
@@ -11,14 +11,16 @@ interface WorkspaceContextType {
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined);
 
 export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
-  const page = usePage<{ currentWorkspace?: Workspace }>();
+  const page = usePage<{ currentWorkspace?: Workspace; workspaces?: Workspace[] }>();
   const workspace = page.props.currentWorkspace ?? null;
-  const workspaces = workspace ? [workspace] : [];
+  const workspaces = page.props.workspaces ?? (workspace ? [workspace] : []);
 
   const value: WorkspaceContextType = {
     workspace,
     workspaces,
-    switchWorkspace: () => undefined,
+    switchWorkspace: (workspaceId: string) => {
+      router.post(`/w/${workspaceId}/switch`, {}, { preserveScroll: true });
+    },
   };
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;

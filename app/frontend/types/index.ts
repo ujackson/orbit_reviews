@@ -11,6 +11,7 @@ export type SharedProps = {
   flash: FlashData
   currentUser?: User
   currentWorkspace?: Workspace
+  workspaces?: Workspace[]
   authRoutes?: {
     login: string
     logout: string

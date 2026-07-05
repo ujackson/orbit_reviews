@@ -45,15 +45,16 @@ export const color = {
     900: '#523E91',  // Desaturated
   },
   
-  // Functional colors - action and status (8-10% of UI, rare and intentional)
+  // Functional colors — reserved use: active nav, primary CTA, selected state, brand moments
   functional: {
-    primary: '#5E6AD2',      // Indigo action color - reserved for Send, primary CTAs
-    primaryHover: '#4E5BBD',
-    success: '#059669',
-    warning: '#D97706',
-    error: '#DC2626',        // Pure error state
-    errorSubtle: '#E87C7C',  // Desaturated for chips/badges
-    info: '#0284C7',
+    primary:      '#5B5BD6',  // Orbit brand indigo — use sparingly
+    primaryHover: '#4F46E5',
+    success:      '#059669',
+    warning:      '#D97706',
+    error:        '#DC2626',
+    errorHover:   '#B91C1C',
+    errorSubtle:  '#FCA5A5',
+    info:         '#2563EB',
   },
   
   // Channel colors - reduced saturation for informational badges (not decorative)
@@ -73,19 +74,19 @@ export const color = {
   // Purpose: Structure & stability - fades into background cognition
   // Rules: No strong color, no gradients, no visual noise
   surface: {
-    environment: '#FAFAFA',           // Rail, command bar, system chrome
-    environmentHover: '#F0F0F0',      // Subtle hover state (+3% darkening)
+    environment: '#F8FAFC',           // Rail, command bar, system chrome
+    environmentHover: '#F3F4F6',      // Subtle hover state (+3% darkening)
     
     // Layer 2: Navigation Surface
     // Purpose: Conversation list - neutral navigation context
-    navigation: '#FCFCFC',            // Slightly lighter than environment
-    navigationHover: '#F5F5F5',       // Hover state
+    navigation: '#F9FAFB',            // Slightly lighter than environment
+    navigationHover: '#F3F4F6',       // Hover state
     
     // Layer 3: Work Surface (Primary Cognitive Anchor)
     // Purpose: Thread panel - center of gravity, slightly warm
     // Rules: 1-2% warmer than navigation, minimal borders, zero accent unless acting
-    work: '#FFFEFB',                  // Warm cream - primary work surface dominance
-    workSubtle: '#FFFCF8',            // Slightly warmer for composer/header differentiation
+    work: '#FFFFFF',                  // Primary work surface
+    workSubtle: '#F9FAFB',            // Subtle surface differentiation
     
     // Layer 4: Intelligence Surface (AI Panel)
     // Purpose: AI thinking layer - tinted neutrality, not bright color
@@ -168,7 +169,7 @@ export const spacing = {
 export const typography = {
   // Font families
   fontFamily: {
-    base: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    base: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
     mono: '"SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, monospace',
   },
   
@@ -313,11 +314,11 @@ export const aiVisualLanguage = {
 // ============================================================================
 
 export const text = {
-  primary: color.neutral[900],
-  secondary: color.neutral[600],
-  tertiary: color.neutral[500],
-  disabled: color.neutral[400],
-  inverse: color.neutral[0],
+  primary:   '#111827',  // gray-900 — high contrast, legible
+  secondary: '#4B5563',  // gray-600 — secondary labels and body metadata
+  tertiary:  '#6B7280',  // gray-500 — timestamps and low-priority metadata
+  disabled:  '#9CA3AF',  // gray-400 — disabled/helper-only text
+  inverse:   '#FFFFFF',
 } as const;
 
 // ============================================================================

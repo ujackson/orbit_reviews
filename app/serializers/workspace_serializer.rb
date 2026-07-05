@@ -6,27 +6,37 @@ class WorkspaceSerializer < ApplicationSerializer
   end
 
   attribute :name do |workspace|
-    workspace.workos_organization.name
+    workspace.display_name
   end
 
   attribute :allow_profiles_outside_organization do
     object.workos_organization.allow_profiles_outside_organization || false
+  rescue StandardError
+    false
   end
 
   attribute :domains do |workspace|
     workspace.workos_organization.domains || []
+  rescue StandardError
+    []
   end
 
   attribute :external_id do |workspace|
     workspace.workos_organization.external_id || workspace.id
+  rescue StandardError
+    workspace.id
   end
 
   attribute :created_at do |workspace|
     workspace.workos_organization.created_at || workspace.created_at&.iso8601
+  rescue StandardError
+    workspace.created_at&.iso8601
   end
 
   attribute :updated_at do |workspace|
     workspace.workos_organization.updated_at || workspace.updated_at&.iso8601
+  rescue StandardError
+    workspace.updated_at&.iso8601
   end
 
   typelize object: "string"

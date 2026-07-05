@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_21_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_05_000100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -86,6 +86,38 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_21_000000) do
     t.index ["message_id"], name: "index_attachments_on_message_id"
   end
 
+  create_table "automation_rules", force: :cascade do |t|
+    t.jsonb "action_config", default: {}, null: false
+    t.string "action_type", null: false
+    t.jsonb "conditions", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.text "failure_message"
+    t.datetime "last_run_at"
+    t.string "name", null: false
+    t.integer "runs_count", default: 0, null: false
+    t.string "status", default: "active", null: false
+    t.string "trigger_type", null: false
+    t.datetime "updated_at", null: false
+    t.uuid "workspace_id", null: false
+    t.index ["workspace_id", "name"], name: "index_automation_rules_on_workspace_id_and_name", unique: true
+    t.index ["workspace_id", "status"], name: "index_automation_rules_on_workspace_id_and_status"
+  end
+
+  create_table "automation_runs", force: :cascade do |t|
+    t.bigint "automation_rule_id", null: false
+    t.datetime "created_at", null: false
+    t.text "error_message"
+    t.datetime "finished_at"
+    t.jsonb "metadata", default: {}, null: false
+    t.datetime "started_at"
+    t.string "status", null: false
+    t.datetime "updated_at", null: false
+    t.uuid "workspace_id", null: false
+    t.index ["automation_rule_id"], name: "index_automation_runs_on_automation_rule_id"
+    t.index ["workspace_id", "started_at"], name: "index_automation_runs_on_workspace_id_and_started_at"
+    t.index ["workspace_id", "status"], name: "index_automation_runs_on_workspace_id_and_status"
+  end
+
   create_table "contacts", force: :cascade do |t|
     t.string "avatar_url"
     t.datetime "created_at", null: false
@@ -120,6 +152,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_21_000000) do
     t.index ["last_message_at"], name: "index_conversations_on_last_message_at"
     t.index ["status"], name: "index_conversations_on_status"
     t.index ["workspace_id"], name: "index_conversations_on_workspace_id"
+  end
+
+  create_table "memberships", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.string "role", default: "member", null: false
+    t.string "status", default: "active", null: false
+    t.datetime "updated_at", null: false
+    t.uuid "user_id", null: false
+    t.uuid "workspace_id", null: false
+    t.index ["workspace_id", "role"], name: "index_memberships_on_workspace_id_and_role"
+    t.index ["workspace_id", "user_id"], name: "index_memberships_on_workspace_id_and_user_id", unique: true
   end
 
   create_table "messages", force: :cascade do |t|
@@ -283,8 +327,203 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_21_000000) do
     t.index ["status"], name: "index_orbit_connect_webhook_events_on_status"
   end
 
+  create_table "review_alerts", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "detected_at"
+    t.jsonb "evidence", default: {}, null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.string "owner_name"
+    t.string "severity", null: false
+    t.string "status", default: "active", null: false
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.uuid "workspace_id", null: false
+    t.index ["workspace_id", "severity"], name: "index_review_alerts_on_workspace_id_and_severity"
+    t.index ["workspace_id", "status"], name: "index_review_alerts_on_workspace_id_and_status"
+  end
+
+  create_table "review_analyses", force: :cascade do |t|
+    t.jsonb "analysis_metadata", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.integer "related_review_count", default: 0, null: false
+    t.bigint "review_id", null: false
+    t.string "sentiment"
+    t.string "severity"
+    t.jsonb "signals", default: [], null: false
+    t.text "summary"
+    t.jsonb "themes", default: [], null: false
+    t.datetime "updated_at", null: false
+    t.uuid "workspace_id", null: false
+    t.index ["review_id"], name: "index_review_analyses_on_review_id"
+    t.index ["workspace_id", "review_id"], name: "index_review_analyses_on_workspace_id_and_review_id", unique: true
+  end
+
+  create_table "review_assignments", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "review_id", null: false
+    t.string "status", default: "open", null: false
+    t.datetime "updated_at", null: false
+    t.uuid "user_id", null: false
+    t.uuid "workspace_id", null: false
+    t.index ["review_id"], name: "index_review_assignments_on_review_id"
+    t.index ["workspace_id", "review_id", "user_id"], name: "idx_on_workspace_id_review_id_user_id_c5f3030df4", unique: true
+  end
+
+  create_table "review_insights", force: :cascade do |t|
+    t.decimal "change_percent", precision: 8, scale: 2, default: "0.0", null: false
+    t.datetime "created_at", null: false
+    t.datetime "detected_at"
+    t.integer "evidence_count", default: 0, null: false
+    t.datetime "last_updated_at"
+    t.jsonb "metadata", default: {}, null: false
+    t.string "owner_name"
+    t.string "scope"
+    t.string "severity", null: false
+    t.string "status", default: "new", null: false
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.uuid "workspace_id", null: false
+    t.index ["workspace_id", "severity"], name: "index_review_insights_on_workspace_id_and_severity"
+    t.index ["workspace_id", "status"], name: "index_review_insights_on_workspace_id_and_status"
+  end
+
+  create_table "review_reply_drafts", force: :cascade do |t|
+    t.uuid "approved_by_id"
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.uuid "created_by_id"
+    t.jsonb "grounding", default: {}, null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.bigint "review_id", null: false
+    t.string "status", default: "draft", null: false
+    t.datetime "updated_at", null: false
+    t.uuid "workspace_id", null: false
+    t.index ["review_id"], name: "index_review_reply_drafts_on_review_id"
+    t.index ["workspace_id", "review_id"], name: "index_review_reply_drafts_on_workspace_id_and_review_id"
+  end
+
+  create_table "review_source_accounts", force: :cascade do |t|
+    t.string "auth_status", default: "connected", null: false
+    t.datetime "created_at", null: false
+    t.string "external_account_id"
+    t.datetime "last_sync_at"
+    t.datetime "latest_review_at"
+    t.jsonb "metadata", default: {}, null: false
+    t.string "name", null: false
+    t.integer "records_count", default: 0, null: false
+    t.bigint "review_source_id", null: false
+    t.string "status", default: "healthy", null: false
+    t.string "sync_frequency"
+    t.datetime "updated_at", null: false
+    t.uuid "workspace_id", null: false
+    t.index ["review_source_id"], name: "index_review_source_accounts_on_review_source_id"
+    t.index ["workspace_id", "external_account_id"], name: "idx_on_workspace_id_external_account_id_3ae7c0217a"
+    t.index ["workspace_id", "status"], name: "index_review_source_accounts_on_workspace_id_and_status"
+  end
+
+  create_table "review_sources", force: :cascade do |t|
+    t.string "category", null: false
+    t.datetime "created_at", null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.string "name", null: false
+    t.string "provider", null: false
+    t.string "status", default: "healthy", null: false
+    t.datetime "updated_at", null: false
+    t.uuid "workspace_id", null: false
+    t.index ["workspace_id", "provider"], name: "index_review_sources_on_workspace_id_and_provider", unique: true
+    t.index ["workspace_id", "status"], name: "index_review_sources_on_workspace_id_and_status"
+  end
+
+  create_table "review_sync_runs", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "error_message"
+    t.datetime "finished_at"
+    t.jsonb "metadata", default: {}, null: false
+    t.integer "records_created", default: 0, null: false
+    t.integer "records_seen", default: 0, null: false
+    t.integer "records_updated", default: 0, null: false
+    t.bigint "review_source_account_id", null: false
+    t.datetime "started_at"
+    t.string "status", null: false
+    t.datetime "updated_at", null: false
+    t.uuid "workspace_id", null: false
+    t.index ["review_source_account_id"], name: "index_review_sync_runs_on_review_source_account_id"
+    t.index ["workspace_id", "started_at"], name: "index_review_sync_runs_on_workspace_id_and_started_at"
+    t.index ["workspace_id", "status"], name: "index_review_sync_runs_on_workspace_id_and_status"
+  end
+
+  create_table "review_theme_assignments", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "review_id", null: false
+    t.bigint "review_theme_id", null: false
+    t.datetime "updated_at", null: false
+    t.uuid "workspace_id", null: false
+    t.index ["review_id"], name: "index_review_theme_assignments_on_review_id"
+    t.index ["review_theme_id"], name: "index_review_theme_assignments_on_review_theme_id"
+    t.index ["workspace_id", "review_id", "review_theme_id"], name: "idx_review_theme_assignments_unique", unique: true
+  end
+
+  create_table "review_themes", force: :cascade do |t|
+    t.decimal "change_percent", precision: 8, scale: 2, default: "0.0", null: false
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.jsonb "metadata", default: {}, null: false
+    t.string "name", null: false
+    t.integer "review_count", default: 0, null: false
+    t.string "sentiment", default: "mixed", null: false
+    t.decimal "share", precision: 6, scale: 4, default: "0.0", null: false
+    t.string "status", default: "monitoring", null: false
+    t.datetime "updated_at", null: false
+    t.uuid "workspace_id", null: false
+    t.index ["workspace_id", "name"], name: "index_review_themes_on_workspace_id_and_name", unique: true
+    t.index ["workspace_id", "status"], name: "index_review_themes_on_workspace_id_and_status"
+  end
+
+  create_table "reviews", force: :cascade do |t|
+    t.string "app_version"
+    t.string "author_name"
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.string "external_id", null: false
+    t.string "language", default: "en"
+    t.string "location_name"
+    t.jsonb "metadata", default: {}, null: false
+    t.string "platform"
+    t.string "product_name"
+    t.integer "rating", null: false
+    t.string "region"
+    t.string "response_status", default: "none", null: false
+    t.bigint "review_source_account_id", null: false
+    t.datetime "reviewed_at", null: false
+    t.string "sentiment", default: "neutral", null: false
+    t.string "source_provider", null: false
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.string "workflow_status", default: "needs_response", null: false
+    t.uuid "workspace_id", null: false
+    t.index ["review_source_account_id"], name: "index_reviews_on_review_source_account_id"
+    t.index ["workspace_id", "external_id", "source_provider"], name: "idx_on_workspace_id_external_id_source_provider_fc39af59e4", unique: true
+    t.index ["workspace_id", "reviewed_at"], name: "index_reviews_on_workspace_id_and_reviewed_at"
+    t.index ["workspace_id", "sentiment"], name: "index_reviews_on_workspace_id_and_sentiment"
+    t.index ["workspace_id", "workflow_status"], name: "index_reviews_on_workspace_id_and_workflow_status"
+  end
+
+  create_table "users", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "email", null: false
+    t.string "first_name"
+    t.string "last_name"
+    t.jsonb "metadata", default: {}, null: false
+    t.string "profile_picture_url"
+    t.datetime "updated_at", null: false
+    t.string "workos_user_id"
+    t.index ["email"], name: "index_users_on_email"
+    t.index ["workos_user_id"], name: "index_users_on_workos_user_id", unique: true
+  end
+
   create_table "workspaces", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.string "name", default: "Acme Corp", null: false
     t.string "remote_id", null: false
     t.datetime "updated_at", null: false
     t.index ["remote_id"], name: "index_workspaces_on_remote_id", unique: true
@@ -297,8 +536,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_21_000000) do
   add_foreign_key "ai_runs", "conversations"
   add_foreign_key "ai_runs", "workspaces"
   add_foreign_key "attachments", "messages"
+  add_foreign_key "automation_rules", "workspaces"
+  add_foreign_key "automation_runs", "automation_rules"
+  add_foreign_key "automation_runs", "workspaces"
   add_foreign_key "contacts", "workspaces"
   add_foreign_key "conversations", "workspaces"
+  add_foreign_key "memberships", "users"
+  add_foreign_key "memberships", "workspaces"
   add_foreign_key "messages", "conversations"
   add_foreign_key "orbit_connect_audit_logs", "orbit_connect_connections", column: "connection_id"
   add_foreign_key "orbit_connect_connection_attempts", "orbit_connect_connections", column: "connection_id"
@@ -310,4 +554,26 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_21_000000) do
   add_foreign_key "orbit_connect_provider_apps", "workspaces"
   add_foreign_key "orbit_connect_sync_states", "orbit_connect_connections", column: "connection_id"
   add_foreign_key "orbit_connect_webhook_events", "orbit_connect_connections", column: "connection_id"
+  add_foreign_key "review_alerts", "workspaces"
+  add_foreign_key "review_analyses", "reviews"
+  add_foreign_key "review_analyses", "workspaces"
+  add_foreign_key "review_assignments", "reviews"
+  add_foreign_key "review_assignments", "users"
+  add_foreign_key "review_assignments", "workspaces"
+  add_foreign_key "review_insights", "workspaces"
+  add_foreign_key "review_reply_drafts", "reviews"
+  add_foreign_key "review_reply_drafts", "users", column: "approved_by_id"
+  add_foreign_key "review_reply_drafts", "users", column: "created_by_id"
+  add_foreign_key "review_reply_drafts", "workspaces"
+  add_foreign_key "review_source_accounts", "review_sources"
+  add_foreign_key "review_source_accounts", "workspaces"
+  add_foreign_key "review_sources", "workspaces"
+  add_foreign_key "review_sync_runs", "review_source_accounts"
+  add_foreign_key "review_sync_runs", "workspaces"
+  add_foreign_key "review_theme_assignments", "review_themes"
+  add_foreign_key "review_theme_assignments", "reviews"
+  add_foreign_key "review_theme_assignments", "workspaces"
+  add_foreign_key "review_themes", "workspaces"
+  add_foreign_key "reviews", "review_source_accounts"
+  add_foreign_key "reviews", "workspaces"
 end

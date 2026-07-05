@@ -1,8 +1,6 @@
-import { createContext, useContext, ReactNode, useEffect, useRef, useState } from 'react';
+import { createContext, useContext, ReactNode, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { createConsumer, type Consumer, type Subscription } from '@rails/actioncable';
 import { env } from '../bootstrap/env';
-import { useWorkspace } from './WorkspaceProvider';
 
 interface RealtimeEvent {
   type: string;
@@ -17,43 +15,43 @@ interface RealtimeContextType {
 const RealtimeContext = createContext<RealtimeContextType | undefined>(undefined);
 
 export const RealtimeProvider = ({ children }: { children: ReactNode }) => {
-  const consumerRef = useRef<Consumer | null>(null);
-  const subscriptionRef = useRef<Subscription | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
+  const wsRef = useRef<WebSocket | null>(null);
   const queryClient = useQueryClient();
-  const { workspace } = useWorkspace();
 
   useEffect(() => {
-    if (!workspace?.id) {
-      setIsConnected(false);
-      return;
+    // Only connect when an explicit WS URL is configured (not the localhost fallback)
+    if (!import.meta.env.VITE_WS_URL) return;
+
+    if (env.isProduction) {
+      const ws = new WebSocket(env.wsUrl);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        console.log('[Realtime] Connected');
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data: RealtimeEvent = JSON.parse(event.data);
+          handleRealtimeEvent(data);
+        } catch (error) {
+          console.error('[Realtime] Failed to parse message:', error);
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error('[Realtime] WebSocket error:', error);
+      };
+
+      ws.onclose = () => {
+        console.log('[Realtime] Disconnected');
+      };
+
+      return () => {
+        ws.close();
+      };
     }
-
-    const consumer = createConsumer(env.wsUrl);
-    consumerRef.current = consumer;
-    subscriptionRef.current = consumer.subscriptions.create(
-      { channel: 'AiUpdatesChannel', workspace_id: workspace.id },
-      {
-        connected: () => {
-          setIsConnected(true);
-          console.log('[Realtime] Connected');
-        },
-        disconnected: () => {
-          setIsConnected(false);
-          console.log('[Realtime] Disconnected');
-        },
-        received: (event: unknown) => handleRealtimeEvent(event as RealtimeEvent),
-      }
-    );
-
-    return () => {
-      setIsConnected(false);
-      subscriptionRef.current?.unsubscribe();
-      subscriptionRef.current = null;
-      consumer.disconnect();
-      consumerRef.current = null;
-    };
-  }, [workspace?.id]);
+  }, []);
 
   const handleRealtimeEvent = (event: RealtimeEvent) => {
     console.log('[Realtime] Event received:', event.type);
@@ -77,9 +75,8 @@ export const RealtimeProvider = ({ children }: { children: ReactNode }) => {
         break;
 
       case 'ai.summary.updated':
-      case 'ai.analysis.completed':
         // Invalidate AI summary queries
-        queryClient.invalidateQueries({ queryKey: ['ai'] });
+        queryClient.invalidateQueries({ queryKey: ['aiSummary'] });
         break;
 
       default:
@@ -88,11 +85,13 @@ export const RealtimeProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const send = (event: RealtimeEvent) => {
-    subscriptionRef.current?.perform('receive', event);
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify(event));
+    }
   };
 
   const value: RealtimeContextType = {
-    isConnected,
+    isConnected: wsRef.current?.readyState === WebSocket.OPEN,
     send,
   };
 

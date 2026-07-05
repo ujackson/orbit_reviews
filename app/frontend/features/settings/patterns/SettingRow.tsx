@@ -5,7 +5,7 @@
  * No card styling - pure structured row pattern.
  */
 
-import { Box, Typography, Switch, alpha } from '@mui/material';
+import { Box, Typography, Switch } from '@mui/material';
 import { color, spacing, typography, text, radius, transition } from '../../../shared/tokens/design-tokens';
 
 interface SettingRowProps {
@@ -27,25 +27,26 @@ export const SettingRow = ({
   disabled = false,
   helperText,
 }: SettingRowProps) => {
-  const resolvedChecked = checked ?? value ?? false;
+  const isChecked = checked ?? value ?? false;
 
   return (
     <Box
       sx={{
         display: 'flex',
-        alignItems: 'flex-start',
+        flexDirection: { xs: 'column', sm: 'row' },
+        alignItems: { xs: 'stretch', sm: 'flex-start' },
         justifyContent: 'space-between',
         py: spacing[16],
         px: spacing[20],
         borderRadius: radius.base,
         transition: `background-color ${transition.duration.fast} ${transition.easing.base}`,
         '&:hover': {
-          bgcolor: alpha(color.neutral[900], 0.02), // Subtle hover state
+          bgcolor: '#F9FAFB',
         },
       }}
     >
       {/* Label and description */}
-      <Box sx={{ flex: 1, pr: spacing[24] }}>
+      <Box sx={{ flex: 1, pr: { xs: 0, sm: spacing[24] } }}>
         <Typography
           sx={{
             fontSize: typography.fontSize.md,
@@ -60,7 +61,7 @@ export const SettingRow = ({
         <Typography
           sx={{
             fontSize: typography.fontSize.sm,
-            color: text.tertiary,
+            color: text.secondary,
             lineHeight: typography.lineHeight.base,
           }}
         >
@@ -69,7 +70,7 @@ export const SettingRow = ({
         {helperText && (
           <Typography
             sx={{
-              fontSize: typography.fontSize.xs,
+              fontSize: typography.fontSize.sm,
               color: text.tertiary,
               lineHeight: typography.lineHeight.base,
               mt: spacing[4],
@@ -82,10 +83,12 @@ export const SettingRow = ({
 
       {/* Toggle control */}
       <Switch
-        checked={resolvedChecked}
+        checked={isChecked}
         onChange={(e) => onChange(e.target.checked)}
         disabled={disabled}
         sx={{
+          alignSelf: { xs: 'flex-start', sm: 'center' },
+          mt: { xs: spacing[8], sm: 0 },
           '& .MuiSwitch-switchBase.Mui-checked': {
             color: color.functional.primary,
           },

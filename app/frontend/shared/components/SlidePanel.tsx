@@ -22,23 +22,18 @@ interface SlidePanelProps {
   width?: number;
 }
 
-export const SlidePanel = ({
-  open,
-  onClose,
-  title,
+export const SlidePanel = ({ 
+  open, 
+  onClose, 
+  title, 
   subtitle,
   breadcrumb,
   intelligenceTip,
   children,
-  width = 480
+  width = 480 
 }: SlidePanelProps) => {
   const theme = useTheme();
-
-  // Debug: Log when panel opens
-  if (open) {
-    console.log('[SlidePanel] OPEN:', title);
-  }
-
+  
   return (
     <AnimatePresence>
       {open && (
@@ -59,7 +54,6 @@ export const SlidePanel = ({
               zIndex: 1300,
             }}
             onClick={onClose}
-            data-panel={title}
           />
 
           {/* Panel */}

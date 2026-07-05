@@ -6,7 +6,7 @@
  */
 
 import { Box } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { SettingsSidebar } from './components/SettingsSidebar';
 import { SettingsHeader } from './components/SettingsHeader';
 import { AppearanceSettings } from './components/AppearanceSettings';
@@ -17,16 +17,8 @@ import { SecuritySettings } from './components/SecuritySettings';
 import { BillingSettings } from './components/BillingSettings';
 import { color, spacing } from '../../shared/tokens/design-tokens';
 
-interface SettingsViewProps {
-  initialSection?: string;
-}
-
-export const SettingsView = ({ initialSection = 'appearance' }: SettingsViewProps) => {
-  const [selectedSection, setSelectedSection] = useState(initialSection);
-
-  useEffect(() => {
-    setSelectedSection(initialSection);
-  }, [initialSection]);
+export const SettingsView = () => {
+  const [selectedSection, setSelectedSection] = useState('appearance');
 
   // Section configuration
   const sectionConfig: Record<string, { title: string; description: string }> = {
@@ -59,7 +51,7 @@ export const SettingsView = ({ initialSection = 'appearance' }: SettingsViewProp
   const currentSection = sectionConfig[selectedSection];
 
   return (
-    <Box sx={{ display: 'flex', flex: 1, height: '100vh', overflow: 'hidden' }}>
+    <Box sx={{ display: 'flex', flex: 1, height: '100%', overflow: 'hidden' }}>
       {/* Settings Sidebar */}
       <SettingsSidebar
         selectedSection={selectedSection}
@@ -72,8 +64,8 @@ export const SettingsView = ({ initialSection = 'appearance' }: SettingsViewProp
           flex: 1,
           overflow: 'auto',
           bgcolor: color.surface.work, // Layer 3 - Work surface (primary focus)
-          px: spacing[64],
-          py: spacing[48],
+          px: { xs: spacing[16], md: spacing[48], lg: spacing[64] },
+          py: { xs: spacing[24], md: spacing[48] },
         }}
       >
         <Box sx={{ maxWidth: 800 }}>

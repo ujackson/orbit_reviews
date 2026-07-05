@@ -12,7 +12,7 @@ Rails.application.routes.draw do
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
-  # Defines the root path route ("/")
+  # Orbit Reviews application routes
   root "workspace#home"
 
   # Authentication routes
@@ -29,11 +29,29 @@ Rails.application.routes.draw do
     get "/setup/:step", to: "setup#show", constraints: { step: /workspace|team|channels|complete/ }, as: :setup_step
     patch "/setup", to: "setup#update"
 
-    get "/w/:workspace_id", to: redirect("/w/%{workspace_id}/inbox/all"), as: :workspace
-    get "/w/:workspace_id/inbox/:view_id", to: "workspace#inbox", as: :workspace_inbox
-    get "/w/:workspace_id/contacts", to: "workspace#contacts", as: :workspace_contacts
-    get "/w/:workspace_id/rules", to: "workspace#rules", as: :workspace_rules
-    get "/w/:workspace_id/settings", to: "workspace#settings", as: :workspace_settings
+    get "/inbox", to: "inbox#index", as: :inbox
+    get "/insights", to: "insights#index", as: :insights
+    get "/themes", to: "themes#index", as: :themes
+    get "/alerts", to: "alerts#index", as: :alerts
+    get "/competitors", to: "competitors#index", as: :competitors
+    get "/reports", to: "reports#index", as: :reports
+    get "/connections", to: "connections#index", as: :connections
+    get "/automations", to: "automations#index", as: :automations
+    get "/team", to: "team#index", as: :team
+    get "/settings", to: "settings#index", as: :settings
+
+    get "/w/:workspace_id", to: "home#index", as: :workspace
+    get "/w/:workspace_id/inbox", to: "inbox#index", as: :workspace_inbox
+    get "/w/:workspace_id/insights", to: "insights#index", as: :workspace_insights
+    get "/w/:workspace_id/themes", to: "themes#index", as: :workspace_themes
+    get "/w/:workspace_id/alerts", to: "alerts#index", as: :workspace_alerts
+    get "/w/:workspace_id/competitors", to: "competitors#index", as: :workspace_competitors
+    get "/w/:workspace_id/reports", to: "reports#index", as: :workspace_reports
+    get "/w/:workspace_id/connections", to: "connections#index", as: :workspace_connections
+    get "/w/:workspace_id/automations", to: "automations#index", as: :workspace_automations
+    get "/w/:workspace_id/team", to: "team#index", as: :workspace_team
+    get "/w/:workspace_id/settings", to: "settings#index", as: :workspace_settings
+    post "/w/:workspace_id/switch", to: "workspace#switch", as: :switch_workspace
 
     # Integrations
     scope "/w/:workspace_id" do

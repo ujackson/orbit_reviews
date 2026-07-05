@@ -12,17 +12,24 @@ import {
   MoreVert as MoreIcon,
   AdminPanelSettings as AdminIcon,
   Support as SupportIcon,
+  Person as UserIcon,
   Groups as TeamIcon,
   Delete as DeleteIcon,
+  Edit as EditIcon,
   Send as SendIcon,
+  Security as SecurityIcon,
   Verified as VerifiedIcon,
+  Warning as WarningIcon,
+  AutoAwesome as AIIcon,
 } from '@mui/icons-material';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { SettingSection } from '../patterns/SettingSection';
 import { SettingRow } from '../patterns/SettingRow';
 import { SlidePanel } from '../../../shared/components/SlidePanel';
+import { FormSection } from '../../../shared/components/FormSection';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
+import { WorkspaceHealthBanner } from './WorkspaceHealthBanner';
 import { color, spacing, typography, text, radius } from '../../../shared/tokens/design-tokens';
 
 interface User {

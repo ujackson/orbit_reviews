@@ -5,8 +5,8 @@
  * Maintains enterprise minimal hierarchy.
  */
 
-import { Box, Typography, alpha } from '@mui/material';
-import { color, spacing, typography, text } from '../../../shared/tokens/design-tokens';
+import { Box, Typography } from '@mui/material';
+import { spacing, typography, text } from '../../../shared/tokens/design-tokens';
 
 interface SettingSectionProps {
   title: string;
@@ -28,11 +28,11 @@ export const SettingSection = ({
       sx={{
         pt: isFirst ? 0 : spacing[32],
         mt: isFirst ? 0 : spacing[32],
-        borderTop: isFirst ? 'none' : `1px solid ${alpha(color.neutral[900], 0.06)}`, // Subtle tonal divider
+        borderTop: isFirst ? 'none' : '1px solid #E5E7EB',
       }}
     >
       {/* Section header */}
-      <Box sx={{ mb: spacing[16], display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: spacing[16] }}>
+      <Box sx={{ mb: spacing[16], display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing[16] }}>
         <Box>
           <Typography
             sx={{
@@ -49,7 +49,7 @@ export const SettingSection = ({
             <Typography
               sx={{
                 fontSize: typography.fontSize.sm,
-                color: text.tertiary,
+                color: text.secondary,
                 lineHeight: typography.lineHeight.base,
               }}
             >
@@ -63,9 +63,9 @@ export const SettingSection = ({
       {/* Section content */}
       <Box
         sx={{
-          bgcolor: color.surface.work, // Layer 3 - Work surface
+          bgcolor: '#FFFFFF',
           borderRadius: '8px',
-          border: `1px solid ${alpha(color.neutral[900], 0.04)}`, // Minimal tonal border
+          border: '1px solid #E5E7EB',
         }}
       >
         {children}

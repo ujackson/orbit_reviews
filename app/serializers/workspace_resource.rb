@@ -1,0 +1,2 @@
+class WorkspaceResource < WorkspaceSerializer
+end

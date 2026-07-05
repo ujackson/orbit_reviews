@@ -1,145 +1,242 @@
-import { alpha, Box, Divider, IconButton, Tooltip } from '@mui/material';
+import { useState } from 'react';
+import { Box, Typography, Tooltip, alpha, Divider, Avatar, Badge } from '@mui/material';
 import {
+  Home as HomeIcon,
   Inbox as InboxIcon,
-  Person as PersonIcon,
-  BookmarkBorder as BookmarkIcon,
-  AutoAwesome as AutoAwesomeIcon,
-  CheckCircle as CheckCircleIcon,
-  People as PeopleIcon,
-  Rule as RuleIcon,
+  AutoGraph as InsightsIcon,
+  BubbleChart as ThemesIcon,
+  NotificationsNone as AlertsIcon,
+  Leaderboard as CompetitorsIcon,
+  Assessment as ReportsIcon,
+  Cable as ConnectionsIcon,
+  AccountTree as AutomationsIcon,
+  Group as TeamIcon,
   Settings as SettingsIcon,
-  Workspaces as WorkspacesIcon,
+  Search as SearchIcon,
+  ExpandMore as ChevronIcon,
 } from '@mui/icons-material';
-import { useLocation, useNavigate } from '@/hooks/useInertiaNavigation';
-import { color, spacing, layout, radius, text, transition } from '@/shared/tokens/design-tokens.ts';
-import { useWorkspace } from '@/providers/WorkspaceProvider';
-import { workspace } from '@/api';
+import { useNavigate, useLocation, useWorkspacePath, workspaceRelativePath } from '@/hooks/useInertiaNavigation';
+import { useUIStore } from '../stores/uiStore';
+import { color, text, transition } from '@/shared/tokens/design-tokens';
+import { WorkspaceSwitcher } from './WorkspaceSwitcher';
+import { useWorkspace } from '../providers/WorkspaceProvider';
 
-type RailItem = {
-  id: string;
-  label: string;
-  icon: React.ReactNode;
-  path: (workspaceId: string) => string;
-};
-
-const inboxViews: RailItem[] = [
-  { id: 'inbox', label: 'All Inbox', icon: <InboxIcon />, path: (workspaceId) => workspace.inbox.path({ workspace_id: workspaceId, view_id: 'all' }) },
-  { id: 'assigned', label: 'Assigned to Me', icon: <PersonIcon />, path: (workspaceId) => workspace.inbox.path({ workspace_id: workspaceId, view_id: 'assigned' }) },
-  { id: 'mentions', label: 'Mentions', icon: <BookmarkIcon />, path: (workspaceId) => workspace.inbox.path({ workspace_id: workspaceId, view_id: 'mentions' }) },
-  { id: 'ai-queue', label: 'AI Queue', icon: <AutoAwesomeIcon />, path: (workspaceId) => workspace.inbox.path({ workspace_id: workspaceId, view_id: 'ai-queue' }) },
-  { id: 'closed', label: 'Closed', icon: <CheckCircleIcon />, path: (workspaceId) => workspace.inbox.path({ workspace_id: workspaceId, view_id: 'closed' }) },
+const PRIMARY_NAV = [
+  { id: 'home',        label: 'Home',        Icon: HomeIcon,        badge: 0 },
+  { id: 'inbox',       label: 'Inbox',       Icon: InboxIcon,       badge: 47 },
+  { id: 'insights',    label: 'Insights',    Icon: InsightsIcon,    badge: 0 },
+  { id: 'themes',      label: 'Themes',      Icon: ThemesIcon,      badge: 0 },
+  { id: 'alerts',      label: 'Alerts',      Icon: AlertsIcon,      badge: 3 },
+  { id: 'competitors', label: 'Competitors', Icon: CompetitorsIcon, badge: 0 },
+  { id: 'reports',     label: 'Reports',     Icon: ReportsIcon,     badge: 0 },
 ];
 
-const objectViews: RailItem[] = [
-  { id: 'contacts', label: 'Contacts', icon: <PeopleIcon />, path: (workspaceId) => workspace.contacts.path({ workspace_id: workspaceId }) },
-  { id: 'rules', label: 'Rules', icon: <RuleIcon />, path: (workspaceId) => workspace.rules.path({ workspace_id: workspaceId }) },
-];
-
-const systemViews: RailItem[] = [
-  { id: 'settings', label: 'Settings', icon: <SettingsIcon />, path: (workspaceId) => workspace.settings.path({ workspace_id: workspaceId }) },
+const SECONDARY_NAV = [
+  { id: 'connections',  label: 'Connections',  Icon: ConnectionsIcon },
+  { id: 'automations',  label: 'Automations',  Icon: AutomationsIcon },
+  { id: 'team',         label: 'Team',         Icon: TeamIcon },
 ];
 
 export const WorkspaceRail = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { workspace: currentWorkspace } = useWorkspace();
-  const workspaceId = currentWorkspace?.id ?? 'default';
+  const navigate   = useNavigate();
+  const location   = useLocation();
+  const workspacePath = useWorkspacePath();
+  const { openCommandPalette } = useUIStore();
+  const { workspace } = useWorkspace();
+  const [wsOpen, setWsOpen] = useState(false);
 
-  const isActive = (path: string) => location.pathname === path;
+  const currentPath = workspaceRelativePath(location.pathname);
+  const active = (id: string) =>
+    (id === 'home' && currentPath === '/') ||
+    currentPath === `/${id}` ||
+    currentPath.startsWith(`/${id}/`);
 
-  const renderNavButton = (item: RailItem) => {
-    const path = item.path(workspaceId);
-    const active = isActive(path);
-
+  const NavItem = ({
+    id, label, Icon, badge = 0,
+  }: { id: string; label: string; Icon: any; badge?: number }) => {
+    const on = active(id);
     return (
-      <Tooltip key={item.id} title={item.label} placement="right">
-        <Box sx={{ position: 'relative' }}>
-          {active && (
-            <Box
-              sx={{
-                position: 'absolute',
-                left: 0,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: 3,
-                height: 28,
-                bgcolor: color.functional.primary,
-                borderRadius: '0 4px 4px 0',
-              }}
-            />
-          )}
-
-          <IconButton
-            onClick={() => navigate(path)}
-            sx={{
-              width: 44,
-              height: 44,
-              borderRadius: radius.base,
-              color: active ? color.functional.primary : text.secondary,
-              bgcolor: active ? alpha(color.functional.primary, 0.12) : 'transparent',
-              transition: `all ${transition.duration.fast} ${transition.easing.base}`,
-              '&:hover': {
-                bgcolor: active ? alpha(color.functional.primary, 0.16) : alpha(color.neutral[900], 0.04),
-              },
-            }}
-          >
-            {item.icon}
-          </IconButton>
-        </Box>
-      </Tooltip>
+      <Box
+        component="button"
+        onClick={() => navigate(workspacePath(id === 'home' ? '' : id))}
+        aria-current={on ? 'page' : undefined}
+        sx={{
+          display: 'flex', alignItems: 'center', gap: '9px',
+          width: '100%', px: '10px', py: '7px', mx: 0,
+          border: 'none', background: 'none', cursor: 'pointer',
+          borderRadius: '6px',
+          bgcolor: on ? '#EEF2FF' : 'transparent',
+          color: on ? color.functional.primary : text.secondary,
+          textAlign: 'left',
+          transition: `background ${transition.duration.fast}, color ${transition.duration.fast}`,
+          '&:hover': {
+            bgcolor: on ? '#E0E7FF' : '#F3F4F6',
+            color: on ? color.functional.primary : text.primary,
+          },
+          '&:focus-visible': {
+            outline: `2px solid ${color.functional.primary}`,
+            outlineOffset: 1,
+          },
+          position: 'relative',
+        }}
+      >
+        {on && (
+          <Box sx={{
+            position: 'absolute', left: 0, top: '50%',
+            transform: 'translateY(-50%)',
+            width: 2.5, height: 16,
+            bgcolor: color.functional.primary,
+            borderRadius: '0 2px 2px 0',
+          }} />
+        )}
+        <Icon sx={{ fontSize: 17, flexShrink: 0, opacity: on ? 1 : 0.86 }} />
+        <Typography sx={{
+          fontSize: 13, lineHeight: 1,
+          fontWeight: on ? 700 : 500,
+          flex: 1,
+          fontFamily: 'inherit',
+        }}>
+          {label}
+        </Typography>
+        {badge > 0 && (
+          <Box sx={{
+            minWidth: 18, height: 16, borderRadius: 10, px: '5px',
+            bgcolor: id === 'alerts' ? alpha(color.functional.error, 0.12) : alpha(color.functional.primary, 0.10),
+            color: id === 'alerts' ? color.functional.error : color.functional.primary,
+            fontSize: 10, fontWeight: 700,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            lineHeight: 1,
+          }}>
+            {badge > 99 ? '99+' : badge}
+          </Box>
+        )}
+      </Box>
     );
   };
 
   return (
-    <Box
-      sx={{
-        width: layout.rail.width,
-        height: '100vh',
-        bgcolor: color.surface.environment,
-        borderRight: `1px solid ${alpha(color.neutral[900], 0.04)}`,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        py: spacing[16],
-      }}
-    >
-      <Tooltip title="Orbit workspace" placement="right">
-        <IconButton
-          onClick={() => navigate(workspace.inbox.path({ workspace_id: workspaceId, view_id: 'all' }))}
+    <>
+      <Box
+        component="nav"
+        aria-label="Primary navigation"
+        sx={{
+          width: 248,
+          display: { xs: 'none', md: 'flex' },
+          height: '100vh',
+          bgcolor: '#F8FAFC',
+          borderRight: '1px solid #E5E7EB',
+          flexDirection: 'column',
+          flexShrink: 0,
+          overflow: 'hidden',
+        }}
+      >
+        {/* Workspace switcher */}
+        <Box
+          component="button"
+          onClick={() => setWsOpen(true)}
           sx={{
-            width: 48,
-            height: 48,
-            mb: spacing[16],
-            bgcolor: color.functional.primary,
-            color: color.neutral[0],
-            transition: `all ${transition.duration.fast} ${transition.easing.base}`,
-            '&:hover': {
-              bgcolor: color.functional.primaryHover,
-              transform: 'scale(1.05)',
-            },
+            display: 'flex', alignItems: 'center', gap: '9px',
+            px: '12px', py: '11px',
+            border: 'none', background: 'none', cursor: 'pointer',
+            borderBottom: '1px solid #E5E7EB',
+            '&:hover': { bgcolor: '#F3F4F6' },
+            '&:focus-visible': { outline: `2px solid ${color.functional.primary}`, outlineOffset: -2 },
           }}
         >
-          <WorkspacesIcon />
-        </IconButton>
-      </Tooltip>
+          <Box sx={{
+            width: 26, height: 26, borderRadius: '7px',
+            bgcolor: color.functional.primary,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0, fontSize: 12, fontWeight: 700, color: '#fff',
+          }}>
+            A
+          </Box>
+          <Box sx={{ flex: 1, textAlign: 'left', minWidth: 0 }}>
+            <Typography sx={{ fontSize: 13, fontWeight: 700, color: text.primary, lineHeight: 1.2 }} noWrap>
+              {workspace?.name ?? 'Acme Corp'}
+            </Typography>
+            <Typography sx={{ fontSize: 12, color: text.tertiary, lineHeight: 1, mt: '2px' }}>
+              Enterprise
+            </Typography>
+          </Box>
+          <ChevronIcon sx={{ fontSize: 14, color: text.tertiary, flexShrink: 0 }} />
+        </Box>
 
-      <Divider sx={{ width: 40, mb: spacing[16] }} />
+        {/* Search */}
+        <Box
+          component="button"
+          onClick={openCommandPalette}
+          aria-label="Open command palette"
+          sx={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            mx: '8px', my: '6px', px: '10px', py: '6px',
+            border: '1px solid #D1D5DB',
+            borderRadius: '6px', bgcolor: '#fff',
+            cursor: 'pointer', textAlign: 'left',
+            transition: `border-color ${transition.duration.fast}`,
+            '&:hover': { borderColor: '#9CA3AF', bgcolor: '#F9FAFB' },
+            '&:focus-visible': { outline: `2px solid ${color.functional.primary}`, outlineOffset: 1 },
+          }}
+        >
+          <SearchIcon sx={{ fontSize: 14, color: text.tertiary }} />
+          <Typography sx={{ fontSize: 12, color: text.secondary, flex: 1, fontFamily: 'inherit' }}>
+            Search…
+          </Typography>
+          <Box sx={{ display: 'flex', gap: '2px' }}>
+            {['⌘', 'K'].map(k => (
+              <Box key={k} sx={{ fontSize: 10, color: text.tertiary, bgcolor: '#F3F4F6', border: '1px solid #E5E7EB', borderRadius: '4px', px: '4px', py: '1px', lineHeight: 1.5, fontFamily: 'inherit' }}>
+                {k}
+              </Box>
+            ))}
+          </Box>
+        </Box>
 
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: spacing[4], mb: spacing[16] }}>
-        {inboxViews.map(renderNavButton)}
+        {/* Primary nav */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: '1px', px: '8px', pb: '8px' }}>
+          {PRIMARY_NAV.map(item => (
+            <NavItem key={item.id} {...item} />
+          ))}
+        </Box>
+
+        <Divider sx={{ mx: '8px' }} />
+
+        {/* Secondary nav */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: '1px', px: '8px', py: '8px', flex: 1 }}>
+          {SECONDARY_NAV.map(item => (
+            <NavItem key={item.id} {...item} />
+          ))}
+        </Box>
+
+        <Divider sx={{ mx: '8px' }} />
+
+        {/* Settings + user */}
+        <Box sx={{ px: '8px', py: '8px', display: 'flex', flexDirection: 'column', gap: '1px' }}>
+          <NavItem id="settings" label="Settings" Icon={SettingsIcon} />
+
+          <Box
+            component="button"
+            onClick={() => {}}
+            sx={{
+              display: 'flex', alignItems: 'center', gap: '9px',
+              px: '10px', py: '7px', border: 'none', background: 'none',
+              cursor: 'pointer', borderRadius: '6px', textAlign: 'left',
+              '&:hover': { bgcolor: '#F3F4F6' },
+            }}
+          >
+            <Avatar sx={{ width: 22, height: 22, fontSize: 10, fontWeight: 700, bgcolor: alpha(color.functional.primary, 0.14), color: color.functional.primary }}>
+              SC
+            </Avatar>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography sx={{ fontSize: 12, fontWeight: 600, color: text.primary, lineHeight: 1.2, fontFamily: 'inherit' }} noWrap>
+                Sarah Chen
+              </Typography>
+              <Typography sx={{ fontSize: 12, color: text.tertiary, fontFamily: 'inherit' }}>Admin</Typography>
+            </Box>
+          </Box>
+        </Box>
       </Box>
 
-      <Divider sx={{ width: 40, mb: spacing[16] }} />
-
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: spacing[4] }}>
-        {objectViews.map(renderNavButton)}
-      </Box>
-
-      <Divider sx={{ width: 40, mb: spacing[16] }} />
-
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: spacing[4] }}>
-        {systemViews.map(renderNavButton)}
-      </Box>
-    </Box>
+      <WorkspaceSwitcher open={wsOpen} onClose={() => setWsOpen(false)} />
+    </>
   );
 };

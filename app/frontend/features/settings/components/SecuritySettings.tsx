@@ -7,7 +7,10 @@
 
 import { Box, Button, Chip, Typography, alpha } from '@mui/material';
 import {
+  Security as SecurityIcon,
   Verified as VerifiedIcon,
+  Lock as LockIcon,
+  History as HistoryIcon,
   Download as DownloadIcon,
   VpnKey as KeyIcon,
   Warning as WarningIcon,

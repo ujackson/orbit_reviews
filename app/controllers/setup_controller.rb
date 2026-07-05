@@ -9,7 +9,7 @@ class SetupController < InertiaController
 
   def show
     if Current.workspace.present?
-      redirect_to root_path
+      redirect_to workspace_path(Current.workspace.id)
       return
     end
 
@@ -32,7 +32,7 @@ class SetupController < InertiaController
 
   def update
     if Current.workspace.present?
-      redirect_to root_path
+      redirect_to workspace_path(Current.workspace.id)
       return
     end
 

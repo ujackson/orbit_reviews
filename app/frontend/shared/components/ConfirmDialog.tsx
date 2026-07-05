@@ -96,11 +96,11 @@ export const ConfirmDialog = ({
             fontSize: typography.fontSize.sm,
             textTransform: 'none',
             fontWeight: typography.fontWeight.medium,
-            bgcolor: (isDestructive || confirmColor === 'error') ? color.functional.error : color.functional.primary,
+            bgcolor: confirmColor === 'error' ? color.functional.error : color.functional.primary,
             color: '#FFFFFF',
             '&:hover': {
-              bgcolor: (isDestructive || confirmColor === 'error')
-                ? color.functional.error
+              bgcolor: confirmColor === 'error' 
+                ? color.functional.errorHover 
                 : color.functional.primaryHover,
             },
           }}

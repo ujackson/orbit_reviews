@@ -4,7 +4,7 @@
  * Settings navigation sidebar - enterprise structure.
  */
 
-import { Box, Typography, List, ListItem, ListItemButton, ListItemIcon, ListItemText, alpha } from '@mui/material';
+import { Box, Typography, List, ListItem, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
 import {
   Palette as PaletteIcon,
   Notifications as NotificationsIcon,
@@ -33,17 +33,17 @@ export const SettingsSidebar = ({ selectedSection, onSectionChange }: SettingsSi
   return (
     <Box
       sx={{
-        width: layout.settingsSidebar.width,
-        height: '100vh',
+        width: { xs: 184, md: layout.settingsSidebar.width },
+        height: '100%',
         bgcolor: color.surface.navigation, // Layer 2 - Navigation surface
-        borderRight: `1px solid ${alpha(color.neutral[900], 0.04)}`, // Tonal border
+        borderRight: '1px solid #E5E7EB',
         py: spacing[24],
-        px: spacing[16],
+        px: { xs: spacing[8], md: spacing[16] },
       }}
     >
       <Typography
         sx={{
-          fontSize: typography.fontSize.xl,
+          fontSize: { xs: '18px', md: '20px' },
           fontWeight: typography.fontWeight.semibold,
           color: text.primary,
           px: spacing[12],
@@ -66,13 +66,14 @@ export const SettingsSidebar = ({ selectedSection, onSectionChange }: SettingsSi
                   borderRadius: radius.base,
                   transition: `all ${transition.duration.fast} ${transition.easing.base}`,
                   '&.Mui-selected': {
-                    bgcolor: alpha(color.functional.primary, 0.08), // Subtle selection state
+                    bgcolor: '#EEF2FF',
+                    color: color.functional.primary,
                     '&:hover': {
-                      bgcolor: alpha(color.functional.primary, 0.12),
+                      bgcolor: '#E0E7FF',
                     },
                   },
                   '&:hover': {
-                    bgcolor: alpha(color.neutral[900], 0.03),
+                    bgcolor: '#F3F4F6',
                   },
                 }}
               >
@@ -88,9 +89,9 @@ export const SettingsSidebar = ({ selectedSection, onSectionChange }: SettingsSi
                 <ListItemText
                   primary={section.label}
                   primaryTypographyProps={{
-                    fontSize: typography.fontSize.md,
-                    fontWeight: isSelected ? typography.fontWeight.semibold : typography.fontWeight.normal,
-                    color: isSelected ? text.primary : text.secondary,
+                    fontSize: { xs: typography.fontSize.base, md: typography.fontSize.md },
+                    fontWeight: isSelected ? 700 : 500,
+                    color: isSelected ? color.functional.primary : text.secondary,
                   }}
                 />
               </ListItemButton>

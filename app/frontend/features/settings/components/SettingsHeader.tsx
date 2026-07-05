@@ -5,7 +5,7 @@
  */
 
 import { Box, Typography } from '@mui/material';
-import { spacing, typography, text } from '../../../shared/tokens/design-tokens';
+import { color, spacing, typography, text } from '../../../shared/tokens/design-tokens';
 
 interface SettingsHeaderProps {
   title: string;

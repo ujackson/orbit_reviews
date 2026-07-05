@@ -15,6 +15,7 @@ import {
   Message as MessageIcon,
   Storage as StorageIcon,
 } from '@mui/icons-material';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { SettingSection } from '../patterns/SettingSection';
 import { color, spacing, typography, text, radius } from '../../../shared/tokens/design-tokens';
@@ -123,7 +124,7 @@ export const BillingSettings = () => {
                 borderColor: alpha(color.neutral[900], 0.12),
                 color: text.primary,
               }}
-              onClick={() => toast.info('Plan management coming soon! Contact sales@orbit.com')}
+              onClick={() => toast.info('Contact sales@orbit.com to upgrade or change your plan')}
             >
               Change Plan
             </Button>

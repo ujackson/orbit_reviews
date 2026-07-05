@@ -23,6 +23,7 @@ interface WorkspaceHealthBannerProps {
 }
 
 export const WorkspaceHealthBanner = ({ issues = [] }: WorkspaceHealthBannerProps) => {
+  const hasWarnings = issues.some(i => i.severity === 'warning');
   const isHealthy = issues.length === 0;
 
   return (

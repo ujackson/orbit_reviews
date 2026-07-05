@@ -1,0 +1,2 @@
+class CurrentUserResource < UserSerializer
+end

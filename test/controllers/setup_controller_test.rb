@@ -61,11 +61,11 @@ class SetupControllerTest < ActionDispatch::IntegrationTest
 
           follow_redirect!
           assert_response :success
-          assert_includes @response.body, "\"currentView\":\"settings\""
-          assert_includes @response.body, "\"settingsSection\":\"integrations\""
+          assert_includes @response.body, "\"component\":\"Settings\""
+          assert_includes @response.body, "\"workspace\""
 
           assert_equal organization.id, workspace.remote_id
-          assert_nil workspace.attributes["name"] if workspace.has_attribute?(:name)
+          assert_equal "Acme Corp", workspace.name
         end
       end
       end
@@ -157,7 +157,9 @@ class SetupControllerTest < ActionDispatch::IntegrationTest
       end
     end
 
-    assert_redirected_to root_path
+    workspace = Workspace.find_by(remote_id: organization_snapshot.id)
+    assert_not_nil workspace
+    assert_redirected_to workspace_path(workspace.id)
   end
 
   test "user with one active workos membership is not sent back through setup" do

@@ -1,408 +1,148 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  alpha,
-  Avatar,
-  Box,
-  Chip,
-  Dialog,
-  DialogContent,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  TextField,
-  Typography,
+  Dialog, DialogContent, TextField, List, ListItem, ListItemButton,
+  ListItemIcon, ListItemText, Box, Typography, Chip, alpha, Divider,
 } from '@mui/material';
 import {
-  Archive as ArchiveIcon,
-  AutoAwesome as AutoAwesomeIcon,
-  CheckCircle as CheckCircleIcon,
-  DarkMode as DarkModeIcon,
-  Email as EmailIcon,
-  Inbox as InboxIcon,
-  LightMode as LightModeIcon,
-  People as PeopleIcon,
-  Person as PersonIcon,
-  Rule as RuleIcon,
-  Search as SearchIcon,
-  Settings as SettingsIcon,
+  Home as HomeIcon, Inbox as InboxIcon, AutoGraph as InsightsIcon,
+  BubbleChart as ThemesIcon, NotificationsNone as AlertsIcon,
+  Leaderboard as CompetitorsIcon, Assessment as ReportsIcon,
+  Hub as SourcesIcon, AccountTree as AutomationsIcon,
+  Cable as ConnectionsIcon, Group as TeamIcon,
+  Settings as SettingsIcon, Search as SearchIcon,
+  DarkMode as DarkIcon, LightMode as LightIcon,
 } from '@mui/icons-material';
-import { formatDistanceToNow } from 'date-fns';
-import { workspace as workspaceRoutes } from '@/api';
-import { useConversations } from '@/features/inbox/hooks/useConversations';
-import { useInboxUIStore } from '@/features/inbox/store/inboxUIStore';
-import type { Channel } from '@/features/inbox/types';
-import { getChannelColor, getChannelLabel } from '@/lib/mockMessages';
-import { useUIStore } from '@/stores/uiStore';
-import { useNavigate } from '@/hooks/useInertiaNavigation';
-import { useWorkspace } from '@/providers/WorkspaceProvider';
+import { useUIStore } from '../stores/uiStore';
+import { useNavigate, useWorkspacePath } from '@/hooks/useInertiaNavigation';
+import { toast } from 'sonner';
+import { color, text, radius } from '@/shared/tokens/design-tokens';
 
 interface Command {
   id: string;
   label: string;
   subtitle?: string;
-  icon: ReactNode;
+  icon: React.ReactNode;
   keywords: string[];
   action: () => void;
   category: string;
   shortcut?: string;
-  avatar?: string;
-  channel?: Channel;
 }
 
 export const CommandPalette = () => {
   const { isCommandPaletteOpen, closeCommandPalette, theme, toggleTheme } = useUIStore();
-  const { setSelectedConversationId } = useInboxUIStore();
   const navigate = useNavigate();
-  const { workspace } = useWorkspace();
-  const workspaceId = workspace?.id ?? 'default';
+  const workspacePath = useWorkspacePath();
   const [search, setSearch] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  const { data: conversations = [] } = useConversations('all', {
-    status: 'all',
-    channels: [],
-    priority: 'all',
-    searchQuery: '',
-  });
+  const go = (path: string) => navigate(workspacePath(path === 'home' ? '' : path));
 
-  const baseCommands: Command[] = [
-    {
-      id: 'inbox',
-      label: 'Go to Inbox',
-      icon: <InboxIcon />,
-      keywords: ['inbox', 'messages', 'go'],
-      action: () => navigate(workspaceRoutes.inbox.path({ workspace_id: workspaceId, view_id: 'all' })),
-      category: 'Navigation',
-      shortcut: 'G I',
-    },
-    {
-      id: 'assigned',
-      label: 'Go to Assigned to Me',
-      icon: <PersonIcon />,
-      keywords: ['assigned', 'me', 'go'],
-      action: () => navigate(workspaceRoutes.inbox.path({ workspace_id: workspaceId, view_id: 'assigned' })),
-      category: 'Navigation',
-    },
-    {
-      id: 'contacts',
-      label: 'Go to Contacts',
-      icon: <PeopleIcon />,
-      keywords: ['contacts', 'people', 'go'],
-      action: () => navigate(workspaceRoutes.contacts.path({ workspace_id: workspaceId })),
-      category: 'Navigation',
-      shortcut: 'G C',
-    },
-    {
-      id: 'rules',
-      label: 'Go to Rules & Automation',
-      icon: <RuleIcon />,
-      keywords: ['rules', 'automation', 'workflow', 'go'],
-      action: () => navigate(workspaceRoutes.rules.path({ workspace_id: workspaceId })),
-      category: 'Navigation',
-      shortcut: 'G R',
-    },
-    {
-      id: 'settings',
-      label: 'Go to Settings',
-      icon: <SettingsIcon />,
-      keywords: ['settings', 'preferences', 'configuration', 'go'],
-      action: () => navigate(workspaceRoutes.settings.path({ workspace_id: workspaceId })),
-      category: 'Navigation',
-      shortcut: 'G S',
-    },
-    {
-      id: 'toggle-theme',
-      label: `Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`,
-      icon: theme === 'light' ? <DarkModeIcon /> : <LightModeIcon />,
-      keywords: ['theme', 'dark', 'light', 'mode'],
-      action: toggleTheme,
-      category: 'Settings',
-    },
-    {
-      id: 'assign-me',
-      label: 'Assign to Me',
-      icon: <PersonIcon />,
-      keywords: ['assign', 'me'],
-      action: () => undefined,
-      category: 'Actions',
-      shortcut: 'E',
-    },
-    {
-      id: 'close-conversation',
-      label: 'Close Conversation',
-      icon: <CheckCircleIcon />,
-      keywords: ['close', 'done', 'resolve'],
-      action: () => undefined,
-      category: 'Actions',
-      shortcut: 'C',
-    },
-    {
-      id: 'archive',
-      label: 'Archive Conversation',
-      icon: <ArchiveIcon />,
-      keywords: ['archive', 'hide'],
-      action: () => undefined,
-      category: 'Actions',
-    },
-    {
-      id: 'ai-summarize',
-      label: 'AI Summarize Thread',
-      icon: <AutoAwesomeIcon />,
-      keywords: ['ai', 'summarize', 'summary'],
-      action: () => undefined,
-      category: 'AI Commands',
-    },
-    {
-      id: 'ai-draft',
-      label: 'AI Draft Reply',
-      icon: <AutoAwesomeIcon />,
-      keywords: ['ai', 'draft', 'reply', 'suggest'],
-      action: () => undefined,
-      category: 'AI Commands',
-    },
-    {
-      id: 'ai-translate',
-      label: 'AI Translate Message',
-      icon: <AutoAwesomeIcon />,
-      keywords: ['ai', 'translate', 'language'],
-      action: () => undefined,
-      category: 'AI Commands',
-    },
+  const commands: Command[] = [
+    // Navigation
+    { id: 'home',        label: 'Go to Home',         icon: <HomeIcon fontSize="small" />,        keywords: ['home', 'overview', 'what changed', 'briefing'], action: () => go('home'),        category: 'Navigation', shortcut: 'G H' },
+    { id: 'inbox',       label: 'Go to Inbox',         icon: <InboxIcon fontSize="small" />,       keywords: ['inbox', 'reviews', 'response', 'queue'],        action: () => go('inbox'),       category: 'Navigation', shortcut: 'G I' },
+    { id: 'insights',    label: 'Go to Insights',      icon: <InsightsIcon fontSize="small" />,    keywords: ['insights', 'patterns', 'analysis', 'detected'],  action: () => go('insights'),    category: 'Navigation', shortcut: 'G N' },
+    { id: 'themes',      label: 'Go to Themes',        icon: <ThemesIcon fontSize="small" />,      keywords: ['themes', 'topics', 'clusters'],                  action: () => go('themes'),      category: 'Navigation', shortcut: 'G T' },
+    { id: 'alerts',      label: 'Go to Alerts',        icon: <AlertsIcon fontSize="small" />,      keywords: ['alerts', 'notifications', 'anomalies'],           action: () => go('alerts'),      category: 'Navigation' },
+    { id: 'competitors', label: 'Go to Competitors',   icon: <CompetitorsIcon fontSize="small" />, keywords: ['competitors', 'compare', 'benchmark'],            action: () => go('competitors'), category: 'Navigation' },
+    { id: 'reports',     label: 'Go to Reports',       icon: <ReportsIcon fontSize="small" />,     keywords: ['reports', 'export', 'weekly', 'monthly'],         action: () => go('reports'),     category: 'Navigation' },
+    { id: 'connections', label: 'Go to Connections',    icon: <SourcesIcon fontSize="small" />,     keywords: ['connections', 'sources', 'integrations', 'webhooks', 'sync', 'platforms', 'destinations'], action: () => go('connections'), category: 'Navigation' },
+    { id: 'automations', label: 'Go to Automations',   icon: <AutomationsIcon fontSize="small" />, keywords: ['automations', 'workflows', 'triggers'],           action: () => go('automations'), category: 'Navigation' },
+    { id: 'team',        label: 'Go to Team',          icon: <TeamIcon fontSize="small" />,        keywords: ['team', 'members', 'roles', 'permissions'],        action: () => go('team'),        category: 'Navigation' },
+    { id: 'settings',    label: 'Go to Settings',      icon: <SettingsIcon fontSize="small" />,    keywords: ['settings', 'preferences', 'config'],              action: () => go('settings'),    category: 'Navigation', shortcut: 'G S' },
+    // Actions
+    { id: 'draft-response', label: 'Draft response to selected review', icon: <InboxIcon fontSize="small" />, keywords: ['draft', 'reply', 'respond', 'response'], action: () => { go('inbox'); toast.success('Opening inbox — select a review to draft a response'); }, category: 'Actions' },
+    { id: 'create-alert',   label: 'Create alert rule',                 icon: <AlertsIcon fontSize="small" />, keywords: ['alert', 'rule', 'create'],              action: () => { go('automations'); toast.info('Opening automations to create an alert rule'); }, category: 'Actions' },
+    { id: 'toggle-theme',   label: `Switch to ${theme === 'light' ? 'dark' : 'light'} mode`, icon: theme === 'light' ? <DarkIcon fontSize="small" /> : <LightIcon fontSize="small" />, keywords: ['theme', 'dark', 'light', 'mode'], action: toggleTheme, category: 'Settings' },
   ];
 
-  const conversationCommands: Command[] = search.trim()
-    ? conversations
-        .filter((conversation) => {
-          const term = search.toLowerCase();
-          return (
-            conversation.subject.toLowerCase().includes(term) ||
-            conversation.sender.name.toLowerCase().includes(term) ||
-            conversation.preview.toLowerCase().includes(term)
-          );
-        })
-        .slice(0, 5)
-        .map((conversation) => ({
-          id: `conversation-${conversation.id}`,
-          label: conversation.subject,
-          subtitle: `${conversation.sender.name} · ${formatDistanceToNow(conversation.timestamp, { addSuffix: true })}`,
-          icon: <EmailIcon />,
-          avatar: conversation.sender.avatar,
-          channel: conversation.channel,
-          keywords: [conversation.subject, conversation.sender.name, conversation.preview],
-          action: () => {
-            setSelectedConversationId(conversation.id);
-            navigate(workspaceRoutes.inbox.path({ workspace_id: workspaceId, view_id: 'all' }));
-          },
-          category: 'Conversations',
-        }))
-    : [];
+  const filtered = search.trim()
+    ? commands.filter(c =>
+        c.label.toLowerCase().includes(search.toLowerCase()) ||
+        c.keywords.some(k => k.includes(search.toLowerCase()))
+      )
+    : commands;
 
-  const contactCommands: Command[] = search.trim()
-    ? conversations
-        .filter((conversation) => conversation.sender.name.toLowerCase().includes(search.toLowerCase()))
-        .slice(0, 3)
-        .map((conversation) => ({
-          id: `contact-${conversation.sender.id}`,
-          label: conversation.sender.name,
-          subtitle: conversation.sender.email,
-          icon: <PersonIcon />,
-          avatar: conversation.sender.avatar,
-          keywords: [conversation.sender.name, conversation.sender.email],
-          action: () => navigate(workspaceRoutes.contacts.path({ workspace_id: workspaceId })),
-          category: 'Contacts',
-        }))
-    : [];
+  const grouped = filtered.reduce((acc, cmd) => {
+    if (!acc[cmd.category]) acc[cmd.category] = [];
+    acc[cmd.category].push(cmd);
+    return acc;
+  }, {} as Record<string, Command[]>);
 
-  const allCommands = [...baseCommands, ...conversationCommands, ...contactCommands];
+  const order = ['Navigation', 'Actions', 'Settings'];
+  const categories = order.filter(c => grouped[c]);
 
-  const filteredCommands = search.trim()
-    ? allCommands.filter((command) => {
-        const term = search.toLowerCase();
-        return (
-          command.keywords.some((keyword) => keyword.toLowerCase().includes(term)) ||
-          command.label.toLowerCase().includes(term)
-        );
-      })
-    : baseCommands;
+  const handleClose = () => { closeCommandPalette(); setSearch(''); setSelectedIndex(0); };
+  const execute = (cmd: Command) => { cmd.action(); handleClose(); };
 
-  const groupedCommands = filteredCommands.reduce(
-    (groups, command) => {
-      if (!groups[command.category]) groups[command.category] = [];
-      groups[command.category].push(command);
-      return groups;
-    },
-    {} as Record<string, Command[]>
-  );
+  useEffect(() => { if (isCommandPaletteOpen) { setSearch(''); setSelectedIndex(0); } }, [isCommandPaletteOpen]);
 
-  const categoryOrder = ['Conversations', 'Contacts', 'Navigation', 'Actions', 'AI Commands', 'Settings'];
-  const sortedCategories = Object.keys(groupedCommands).sort((left, right) => {
-    const leftIndex = categoryOrder.indexOf(left);
-    const rightIndex = categoryOrder.indexOf(right);
-    return (leftIndex === -1 ? 999 : leftIndex) - (rightIndex === -1 ? 999 : rightIndex);
-  });
-
-  const handleClose = () => {
-    closeCommandPalette();
-    setSearch('');
-    setSelectedIndex(0);
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); setSelectedIndex(p => Math.min(p + 1, filtered.length - 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setSelectedIndex(p => Math.max(p - 1, 0)); }
+    else if (e.key === 'Enter') { e.preventDefault(); if (filtered[selectedIndex]) execute(filtered[selectedIndex]); }
   };
-
-  const handleExecute = (command: Command) => {
-    command.action();
-    handleClose();
-  };
-
-  useEffect(() => {
-    if (isCommandPaletteOpen) {
-      setSelectedIndex(0);
-    }
-  }, [isCommandPaletteOpen, search]);
-
-  const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      setSelectedIndex((current) => Math.min(current + 1, filteredCommands.length - 1));
-    } else if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      setSelectedIndex((current) => Math.max(current - 1, 0));
-    } else if (event.key === 'Enter') {
-      event.preventDefault();
-      if (filteredCommands[selectedIndex]) {
-        handleExecute(filteredCommands[selectedIndex]);
-      }
-    } else if (event.key === 'Escape') {
-      handleClose();
-    }
-  };
-
-  // Debug: Log command palette state
-  if (isCommandPaletteOpen) {
-    console.log('[CommandPalette] OPEN');
-  }
 
   return (
     <Dialog
       open={isCommandPaletteOpen}
-      slotProps={{
-        backdrop: {
-          'data-component': 'CommandPalette',
-        } as any,
-      }}
       onClose={handleClose}
       maxWidth="sm"
       fullWidth
       PaperProps={{
         sx: {
-          borderRadius: 3,
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          borderRadius: '10px',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.18)',
+          border: '1px solid rgba(0,0,0,0.09)',
           overflow: 'hidden',
         },
       }}
     >
       <DialogContent sx={{ p: 0 }}>
-        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+        {/* Search */}
+        <Box sx={{ px: '14px', py: '10px', borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
           <TextField
-            fullWidth
-            placeholder="Search conversations, contacts, or actions..."
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            onKeyDown={handleKeyDown}
-            autoFocus
+            fullWidth placeholder="Search or navigate…"
+            value={search} onChange={e => setSearch(e.target.value)}
+            onKeyDown={handleKeyDown} autoFocus
             InputProps={{
-              startAdornment: <SearchIcon sx={{ mr: 1.5, color: 'text.secondary' }} />,
-              sx: {
-                '& fieldset': { border: 'none' },
-                fontSize: 15,
-              },
+              startAdornment: <SearchIcon sx={{ mr: '10px', fontSize: 17, color: text.tertiary }} />,
+              sx: { fontSize: 14, '& fieldset': { border: 'none' }, color: text.primary },
             }}
           />
         </Box>
 
+        {/* Results */}
         <Box sx={{ maxHeight: 400, overflow: 'auto' }}>
-          {sortedCategories.map((category) => (
-            <Box key={category}>
-              <Typography
-                variant="caption"
-                sx={{
-                  px: 2,
-                  py: 1,
-                  display: 'block',
-                  color: 'text.secondary',
-                  fontWeight: 600,
-                  textTransform: 'uppercase',
-                  fontSize: 11,
-                  bgcolor: alpha('#000', 0.02),
-                }}
-              >
-                {category}
+          {categories.map(cat => (
+            <Box key={cat}>
+              <Typography sx={{ px: '14px', py: '5px', fontSize: 10, fontWeight: 700, color: text.tertiary, textTransform: 'uppercase', letterSpacing: '0.07em', bgcolor: 'rgba(0,0,0,0.02)' }}>
+                {cat}
               </Typography>
               <List sx={{ py: 0 }}>
-                {groupedCommands[category].map((command) => {
-                  const globalIndex = filteredCommands.indexOf(command);
-                  const channelColor = command.channel ? getChannelColor(command.channel) : alpha('#5E6AD2', 0.15);
-
+                {grouped[cat].map(cmd => {
+                  const gIdx = filtered.indexOf(cmd);
                   return (
-                    <ListItem key={command.id} disablePadding>
+                    <ListItem key={cmd.id} disablePadding>
                       <ListItemButton
-                        selected={globalIndex === selectedIndex}
-                        onClick={() => handleExecute(command)}
-                        sx={{
-                          py: 1.5,
-                          '&.Mui-selected': {
-                            bgcolor: alpha('#5E6AD2', 0.08),
-                          },
-                        }}
+                        selected={gIdx === selectedIndex}
+                        onClick={() => execute(cmd)}
+                        sx={{ py: '9px', px: '14px', '&.Mui-selected': { bgcolor: alpha(color.functional.primary, 0.07) }, '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' } }}
                       >
-                        {command.avatar ? (
-                          <ListItemIcon sx={{ minWidth: 40 }}>
-                            <Avatar
-                              sx={{
-                                width: 24,
-                                height: 24,
-                                fontSize: 11,
-                                bgcolor: command.channel ? alpha(channelColor, 0.15) : alpha('#5E6AD2', 0.15),
-                                color: command.channel ? channelColor : '#5E6AD2',
-                              }}
-                            >
-                              {command.avatar}
-                            </Avatar>
-                          </ListItemIcon>
-                        ) : (
-                          <ListItemIcon sx={{ minWidth: 40, color: 'text.secondary' }}>{command.icon}</ListItemIcon>
-                        )}
+                        <ListItemIcon sx={{ minWidth: 30, color: text.tertiary }}>{cmd.icon}</ListItemIcon>
                         <ListItemText
-                          primary={command.label}
-                          secondary={command.subtitle}
-                          primaryTypographyProps={{ fontSize: 14 }}
-                          secondaryTypographyProps={{ fontSize: 12 }}
+                          primary={cmd.label}
+                          primaryTypographyProps={{ fontSize: 13, color: text.primary, fontWeight: 500 }}
                         />
-                        {command.shortcut ? (
-                          <Chip
-                            label={command.shortcut}
-                            size="small"
-                            sx={{
-                              height: 20,
-                              fontSize: 11,
-                              fontWeight: 600,
-                              bgcolor: alpha('#000', 0.06),
-                            }}
-                          />
-                        ) : null}
-                        {command.channel ? (
-                          <Chip
-                            label={getChannelLabel(command.channel)}
-                            size="small"
-                            sx={{
-                              height: 20,
-                              fontSize: 10,
-                              fontWeight: 600,
-                              bgcolor: alpha(channelColor, 0.1),
-                              color: channelColor,
-                            }}
-                          />
-                        ) : null}
+                        {cmd.shortcut && (
+                          <Box sx={{ display: 'flex', gap: '3px' }}>
+                            {cmd.shortcut.split(' ').map(k => (
+                              <Typography key={k} sx={{ fontSize: 10, color: text.tertiary, bgcolor: 'rgba(0,0,0,0.07)', borderRadius: '4px', px: '5px', py: '2px', lineHeight: 1.4 }}>
+                                {k}
+                              </Typography>
+                            ))}
+                          </Box>
+                        )}
                       </ListItemButton>
                     </ListItem>
                   );
@@ -411,40 +151,21 @@ export const CommandPalette = () => {
             </Box>
           ))}
 
-          {filteredCommands.length === 0 ? (
-            <Box sx={{ py: 8, textAlign: 'center' }}>
-              <Typography variant="body2" color="text.secondary">
-                No results found
-              </Typography>
+          {filtered.length === 0 && (
+            <Box sx={{ py: 6, textAlign: 'center' }}>
+              <Typography sx={{ fontSize: 13, color: text.tertiary }}>No results for "{search}"</Typography>
             </Box>
-          ) : null}
+          )}
         </Box>
 
-        <Box
-          sx={{
-            px: 2,
-            py: 1.5,
-            borderTop: 1,
-            borderColor: 'divider',
-            bgcolor: alpha('#000', 0.01),
-            display: 'flex',
-            gap: 2,
-            fontSize: 12,
-            color: 'text.secondary',
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Chip label="↑↓" size="small" sx={{ height: 18, fontSize: 10 }} />
-            <Typography variant="caption">Navigate</Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Chip label="↵" size="small" sx={{ height: 18, fontSize: 10 }} />
-            <Typography variant="caption">Execute</Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Chip label="Esc" size="small" sx={{ height: 18, fontSize: 10 }} />
-            <Typography variant="caption">Close</Typography>
-          </Box>
+        {/* Footer hints */}
+        <Box sx={{ px: '14px', py: '9px', borderTop: '1px solid rgba(0,0,0,0.07)', display: 'flex', gap: '16px' }}>
+          {[['↑↓', 'Navigate'], ['↵', 'Select'], ['Esc', 'Close']].map(([k, l]) => (
+            <Box key={k} sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Typography sx={{ fontSize: 10, color: text.tertiary, bgcolor: 'rgba(0,0,0,0.06)', borderRadius: '4px', px: '5px', py: '1px', lineHeight: 1.5 }}>{k}</Typography>
+              <Typography sx={{ fontSize: 11, color: text.tertiary }}>{l}</Typography>
+            </Box>
+          ))}
         </Box>
       </DialogContent>
     </Dialog>

@@ -5,39 +5,29 @@ class WorkspaceController < InertiaController
     redirect_to workspace_path(Current.workspace.id)
   end
 
-  def inbox
-    render_workspace(current_view: "inbox", inbox_view_id: normalized_inbox_view)
-  end
+  def switch
+    requested_workspace = Workspace.find_by(id: params[:workspace_id]) || Workspace.find_by(remote_id: params[:workspace_id])
+    organization_id = requested_workspace&.remote_id || params[:workspace_id]
 
-  def contacts
-    render_workspace(current_view: "contacts")
-  end
+    workos_config = Rails.configuration.auth.fetch(:workos)
+    workos_session = Workos::Client.load_sealed_session(
+      client_id: workos_config.fetch(:client_id),
+      session_data: session_cookie_value,
+      cookie_password: workos_config.fetch(:cookie_password)
+    )
 
-  def rules
-    render_workspace(current_view: "rules")
-  end
+    refreshed = workos_session.refresh(organization_id:)
+    unless refreshed[:authenticated]
+      redirect_to workspace_path(Current.workspace.id), flash: { error: "Unable to switch workspace." }
+      return
+    end
 
-  def settings
-    render_workspace(current_view: "settings", settings_section: "integrations")
-  end
+    set_session_cookie!(refreshed.fetch(:sealed_session))
+    Current.workspace = ensure_workspace_for_org(organization_id)
 
-  private
-
-  def render_workspace(current_view:, inbox_view_id: "all", settings_section: "integrations")
-    render inertia: "workspace/index", props: {
-      currentWorkspace: WorkspaceSerializer.new(Current.workspace).to_h,
-      currentView: current_view,
-      inboxViewId: inbox_view_id,
-      settingsSection: settings_section,
-      integrationOnboarding: params[:onboarding] == "1",
-      rails_version: Rails.version,
-      ruby_version: RUBY_DESCRIPTION,
-      rack_version: Rack.release,
-      inertia_rails_version: InertiaRails::VERSION
-    }
-  end
-
-  def normalized_inbox_view
-    %w[all assigned mentions ai-queue closed].include?(params[:view_id]) ? params[:view_id] : "all"
+    redirect_to workspace_path(Current.workspace.id), flash: { success: "Switched to #{Current.workspace.display_name}." }
+  rescue StandardError => e
+    Rails.logger.warn("Workspace switch failed: #{e.class}: #{e.message}")
+    redirect_to workspace_path(Current.workspace.id), flash: { error: "Unable to switch workspace." }
   end
 end

@@ -9,10 +9,12 @@ class AnalyzeConversationJobTest < ActiveJob::TestCase
     clear_enqueued_jobs
     Ai::ScheduleConversationIndex.reset_process_debounce_cache!
 
-    assert_difference "AiRun.completed.count", 1 do
-      assert_difference "AiArtifact.count", 7 do
-        assert_enqueued_with(job: Ai::RagIndexConversationJob) do
-          AnalyzeConversationJob.perform_now(workspace_id: workspace.id, conversation_id: conversation.id, reason: "test")
+    with_env("ORBIT_AI_PROVIDER" => "stub") do
+      assert_difference "AiRun.completed.count", 1 do
+        assert_difference "AiArtifact.count", 7 do
+          assert_enqueued_with(job: Ai::RagIndexConversationJob) do
+            AnalyzeConversationJob.perform_now(workspace_id: workspace.id, conversation_id: conversation.id, reason: "test")
+          end
         end
       end
     end
