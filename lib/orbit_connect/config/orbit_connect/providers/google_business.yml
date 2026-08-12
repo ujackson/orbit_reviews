@@ -1,0 +1,13 @@
+id: google_business
+name: Google Business Profile
+description: Import Google location reviews and keep ratings intelligence current.
+category: reviews
+auth_type: api_key
+icon: Google
+color: "#4285F4"
+enabled: true
+provider_class: OrbitConnect::Providers::GoogleBusiness
+docs_slug: google_business
+setup_steps:
+  - title: Connect Google Business Profile
+    description: Use a guided token or OAuth-backed provider app to authorize review access.

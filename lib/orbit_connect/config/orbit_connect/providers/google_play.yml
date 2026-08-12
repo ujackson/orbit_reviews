@@ -1,0 +1,13 @@
+id: google_play
+name: Google Play
+description: Import Android app reviews from Google Play.
+category: reviews
+auth_type: api_key
+icon: Android
+color: "#3DDC84"
+enabled: true
+provider_class: OrbitConnect::Providers::GooglePlay
+docs_slug: google_play
+setup_steps:
+  - title: Connect Google Play
+    description: Add a service account token and package name for review access.

@@ -52,7 +52,7 @@ Use this format:
 
 Examples:
 
-- `Rule check: backend/current-state -> only Workspace is persisted for tenancy today, so do not document memberships or RBAC as implemented.`
+- `Rule check: backend/current-state -> Workspace is the tenant root; persisted review, inbox, integration, membership, automation, and AI records are live data surfaces.`
 - `Rule check: backend/inertia-contracts -> Rails owns routes and props, and serializer-backed types must stay aligned.`
 - `Rule check: backend/auth-tenancy -> workspace context comes from the authenticated WorkOS session, not client input.`
 
@@ -62,6 +62,15 @@ Backend-specific rules:
 - Use `docs/orbit_skills_rules_doc.md` as the maintained backend doctrine summary and keep it synced with implementation.
 - Use `docs/llms-full.txt` as supporting Rails/Inertia guidance, not as product truth.
 - Use the configured global MCP server `workos` for current WorkOS/AuthKit reference.
+
+## Refactor guardrails from repository review
+
+- Treat `Workspace` as the tenant root and derive authority from `Current.workspace`; `:workspace_id` route params are navigation context, not authorization proof.
+- For workspace-owned records, prefer explicit `Current.workspace.<association>` queries over bare model queries that rely on `WorkspaceOwnable` default scope.
+- Add or update cross-workspace tests when touching page controllers, API controllers, serializers, or services that read tenant-owned records.
+- Treat `/w/:workspace_id/api/...` as the canonical workspace API route surface; avoid expanding the legacy `/workspaces/:workspace_id/...` AI/RAG routes unless compatibility requires it.
+- Do not copy large static frontend datasets as source-of-truth patterns for persisted domains. Migrate feature views toward serializer-backed Inertia props, generated types, route helpers, or typed API hooks.
+- Treat settings/security/billing/team controls as UI scaffolding unless the Rails route, model/service, and tests for that behavior exist.
 
 ## Source material
 

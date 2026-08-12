@@ -170,6 +170,50 @@ class IntegrationsControllerTest < ActionDispatch::IntegrationTest
     assert_nil connection.credential.reload.api_key
   end
 
+  test "credential submission stores non-secret setup fields as connection settings" do
+    with_authenticated_workspace do
+      post submit_integration_credentials_path(workspace_id: @workspace.id, provider_key: "google_play"),
+           params: {
+             api_key: "service-account-json",
+             package_name: "com.acme.orbit"
+           }
+    end
+
+    assert_response :success
+
+    connection = OrbitConnect::Connection.find_by!(workspace: @workspace, provider_key: "google_play")
+    assert_equal "connected", connection.status
+    assert_equal "service-account-json", connection.credential.api_key
+    assert_equal "com.acme.orbit", connection.settings["package_name"]
+    refute_includes @response.body, "service-account-json"
+  end
+
+  test "credential submission ignores wrapped params and never stores nested secrets in settings" do
+    with_authenticated_workspace do
+      post submit_integration_credentials_path(workspace_id: @workspace.id, provider_key: "trustpilot"),
+           params: {
+             api_key: "trustpilot-secret",
+             business_unit_id: "business-unit-123",
+             export: true,
+             integration: {
+               api_key: "trustpilot-secret",
+               business_unit_id: "business-unit-123"
+             }
+           }
+    end
+
+    assert_response :success
+
+    connection = OrbitConnect::Connection.find_by!(workspace: @workspace, provider_key: "trustpilot")
+    assert_equal "connected", connection.status
+    assert_equal "trustpilot-secret", connection.credential.api_key
+    assert_equal "business-unit-123", connection.settings["business_unit_id"]
+    assert_nil connection.settings["export"]
+    assert_nil connection.settings["integration"]
+    refute_includes connection.settings.to_json, "trustpilot-secret"
+    refute_includes @response.body, "trustpilot-secret"
+  end
+
   test "sync endpoint enqueues manual sync for workspace connection" do
     connection = OrbitConnect::Connection.create!(
       workspace: @workspace,

@@ -1,0 +1,13 @@
+id: apple_app_store
+name: Apple App Store
+description: Import App Store customer reviews for your apps.
+category: reviews
+auth_type: api_key
+icon: Apple
+color: "#111827"
+enabled: true
+provider_class: OrbitConnect::Providers::AppleAppStore
+docs_slug: apple_app_store
+setup_steps:
+  - title: Connect App Store Connect
+    description: Add App Store Connect API key details for review access.

@@ -1,37 +1,48 @@
 /**
- * Connections — unified entry point for review sources, action destinations, and webhooks.
- * Replaces the previously separate Sources and Integrations views.
+ * Connections — unified entry point for review platform connections.
  */
 import { useState } from 'react';
 import {
-  Box, Typography, Tabs, Tab, Divider, alpha, Chip, Button,
+  Box, Typography, Tabs, Tab, alpha, Chip, Button,
   IconButton, Tooltip, Dialog, DialogTitle, DialogContent,
-  DialogActions, TextField, Select, MenuItem, FormControl,
-  InputLabel,
+  DialogActions, TextField,
 } from '@mui/material';
 import {
   Add as AddIcon, Sync as SyncIcon, Settings as SettingsIcon,
   CheckCircle as OkIcon, Error as ErrIcon, Schedule as DelayIcon,
-  Warning as WarnIcon, Delete as DeleteIcon, Refresh as RefreshIcon,
-  ContentCopy as CopyIcon, OpenInNew as ExtIcon,
+  Warning as WarnIcon,
 } from '@mui/icons-material';
-import { color, text, radius } from '../../shared/tokens/design-tokens';
+import { color, text } from '../../shared/tokens/design-tokens';
 import { toast } from 'sonner';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type SyncStatus = 'healthy' | 'syncing' | 'delayed' | 'action_required' | 'disconnected';
-type DestStatus = 'connected' | 'disconnected' | 'error';
-type WebhookStatus = 'healthy' | 'failing' | 'inactive';
+export type SyncStatus = 'healthy' | 'syncing' | 'pending' | 'delayed' | 'action_required' | 'disconnected';
+
+export type CredentialField = {
+  name: string;
+  label: string;
+  type?: string;
+  required?: boolean;
+};
 
 // ─── Review Sources data ──────────────────────────────────────────────────────
 
 export interface SourceAccount {
   id: string; name: string; status: SyncStatus;
   lastSync: string; latestReview: string;
-  recordsSynced: number; syncFrequency: string; error?: string;
+  recordsSynced: number; syncFrequency: string; error?: string; connectionId?: number;
 }
-export interface SourceProvider { id: string; name: string; category: string; accounts: SourceAccount[] }
+export interface SourceProvider {
+  id: string; name: string; category: string; accounts: SourceAccount[];
+  authType?: string; capabilities?: string[]; credentialFields?: CredentialField[];
+  setupMode?: string; setupNote?: string | null; securityNote?: string | null;
+  docsUrl?: string | null; estimatedSetupMinutes?: number;
+  status?: SyncStatus; healthStatus?: string | null; lastSync?: string;
+}
+
+type ProviderAction = (provider: SourceProvider, values?: Record<string, string>) => Promise<void> | void;
+type ConnectionAction = (account: SourceAccount, provider: SourceProvider) => Promise<void> | void;
 
 const SOURCES: SourceProvider[] = [
   {
@@ -68,19 +79,28 @@ const SOURCES: SourceProvider[] = [
   },
 ];
 
-const AVAILABLE_SOURCES = [
-  'Capterra', 'Yelp', 'Tripadvisor', 'Amazon', 'Shopify', 'Yotpo', 'Bazaarvoice',
-];
-
 const statusMeta: Record<SyncStatus, { label: string; icon: React.ReactNode; color: string }> = {
   healthy:         { label: 'Healthy',         icon: <OkIcon sx={{ fontSize: 13, color: color.functional.success }} />,  color: color.functional.success },
   syncing:         { label: 'Syncing',          icon: <SyncIcon sx={{ fontSize: 13, color: color.functional.info }} />,   color: color.functional.info },
+  pending:         { label: 'Pending',          icon: <SyncIcon sx={{ fontSize: 13, color: color.functional.info }} />,   color: color.functional.info },
   delayed:         { label: 'Delayed',          icon: <DelayIcon sx={{ fontSize: 13, color: color.functional.warning }} />, color: color.functional.warning },
   action_required: { label: 'Action required',  icon: <WarnIcon sx={{ fontSize: 13, color: color.functional.error }} />,   color: color.functional.error },
   disconnected:    { label: 'Disconnected',     icon: <ErrIcon sx={{ fontSize: 13, color: text.tertiary }} />,             color: text.tertiary },
 };
 
-function SourceAccountRow({ account }: { account: SourceAccount }) {
+function SourceAccountRow({
+  account,
+  provider,
+  busy,
+  onSync,
+  onDisconnect,
+}: {
+  account: SourceAccount;
+  provider: SourceProvider;
+  busy: boolean;
+  onSync?: ConnectionAction;
+  onDisconnect?: ConnectionAction;
+}) {
   const sm = statusMeta[account.status];
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', px: '20px', py: '10px', gap: '12px', borderBottom: '1px solid rgba(0,0,0,0.05)', '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' } }}>
@@ -103,43 +123,94 @@ function SourceAccountRow({ account }: { account: SourceAccount }) {
       <Typography sx={{ fontSize: 11, color: text.tertiary, width: 110, flexShrink: 0, textAlign: 'right' }}>{account.syncFrequency}</Typography>
       <Box sx={{ display: 'flex', gap: '2px', width: 70, flexShrink: 0, justifyContent: 'flex-end' }}>
         {account.status === 'action_required' ? (
-          <Button size="small" onClick={() => toast.success('Redirecting to authentication…')}
+          <Button size="small" disabled={busy} onClick={() => toast.success('Redirecting to authentication…')}
             sx={{ fontSize: 10, height: 24, px: '8px', bgcolor: color.functional.error, color: '#fff', '&:hover': { bgcolor: '#B91C1C' } }}>
             Fix
           </Button>
         ) : (
           <Tooltip title="Force sync">
-            <IconButton size="small" onClick={() => toast.success('Sync triggered')} sx={{ color: text.tertiary }}>
+            <span>
+            <IconButton
+              size="small"
+              aria-label={`Sync ${account.name}`}
+              disabled={busy || !account.connectionId}
+              onClick={() => onSync?.(account, provider)}
+              sx={{ color: text.tertiary }}
+            >
               <SyncIcon sx={{ fontSize: 14 }} />
             </IconButton>
+            </span>
           </Tooltip>
         )}
-        <Tooltip title="Settings">
-          <IconButton size="small" onClick={() => toast.info('Source settings')} sx={{ color: text.tertiary }}>
+        <Tooltip title="Disconnect">
+          <span>
+          <IconButton
+            size="small"
+            aria-label={`Disconnect ${account.name}`}
+            disabled={busy || !account.connectionId}
+            onClick={() => onDisconnect?.(account, provider)}
+            sx={{ color: text.tertiary }}
+          >
             <SettingsIcon sx={{ fontSize: 14 }} />
           </IconButton>
+          </span>
         </Tooltip>
       </Box>
     </Box>
   );
 }
 
-function ReviewSourcesTab({ sources = SOURCES }: { sources?: SourceProvider[] }) {
+const setupLabels: Record<string, string> = {
+  oauth: 'OAuth',
+  api_key: 'API token',
+  jwt_private_key: 'JWT key',
+  service_account: 'Service account',
+};
+
+function ReviewSourcesTab({
+  sources = SOURCES,
+  busyProviderId,
+  onConnect,
+  onSync,
+  onDisconnect,
+}: {
+  sources?: SourceProvider[];
+  busyProviderId?: string | null;
+  onConnect?: ProviderAction;
+  onSync?: ConnectionAction;
+  onDisconnect?: ConnectionAction;
+}) {
   const [connectOpen, setConnectOpen] = useState(false);
-  const [connectTarget, setConnectTarget] = useState('');
+  const [connectTarget, setConnectTarget] = useState<SourceProvider | null>(null);
+  const [credentialValues, setCredentialValues] = useState<Record<string, string>>({});
   const totalConnected = sources.reduce((s, p) => s + p.accounts.length, 0);
   const actionRequired = sources.flatMap(p => p.accounts).filter(a => a.status === 'action_required').length;
+  const credentialFields = connectTarget?.credentialFields?.length
+    ? connectTarget.credentialFields
+    : connectTarget?.authType === 'oauth2'
+      ? []
+      : [{ name: 'api_key', label: 'API key', type: 'password', required: true }];
+  const connectName = connectTarget?.name || 'review source';
+  const busy = !!connectTarget && busyProviderId === connectTarget.id;
+  const readyToImport = sources.filter(source => source.accounts.some(account => account.status === 'healthy' || account.status === 'syncing')).length;
+  const nextConnectTarget = sources.find(source => source.accounts.length === 0) ?? sources[0] ?? null;
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', flex: 1 }}>
       {/* Sub-header */}
       <Box sx={{ px: '24px', py: '10px', borderBottom: '1px solid rgba(0,0,0,0.07)', display: 'flex', alignItems: 'center', gap: '10px', bgcolor: '#FAFAFA', flexShrink: 0 }}>
-        <Typography sx={{ fontSize: 12, color: text.secondary, flex: 1 }}>
-          {totalConnected} connected accounts
-          {actionRequired > 0 && <Box component="span" sx={{ color: color.functional.error, fontWeight: 600, ml: '8px' }}>· {actionRequired} need attention</Box>}
-        </Typography>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography sx={{ fontSize: 12, color: text.secondary }}>
+            {totalConnected} connected accounts · {readyToImport} importing review sources
+            {actionRequired > 0 && <Box component="span" sx={{ color: color.functional.error, fontWeight: 600, ml: '8px' }}>· {actionRequired} need attention</Box>}
+          </Typography>
+          <Typography sx={{ fontSize: 11, color: text.tertiary, mt: '2px' }}>
+            OAuth tokens, API tokens, private keys, and service-account credentials are encrypted at rest.
+          </Typography>
+        </Box>
         <Button size="small" variant="outlined" startIcon={<AddIcon sx={{ fontSize: 14 }} />}
-          onClick={() => setConnectOpen(true)}
+          disabled={!nextConnectTarget}
+          onClick={() => { setConnectTarget(nextConnectTarget); setCredentialValues({}); setConnectOpen(true); }}
           sx={{ fontSize: 12, height: 30, px: '12px', borderColor: 'rgba(0,0,0,0.15)', color: text.secondary }}>
           Add source
         </Button>
@@ -167,325 +238,243 @@ function ReviewSourcesTab({ sources = SOURCES }: { sources?: SourceProvider[] })
               <Typography sx={{ fontSize: 12, fontWeight: 700, color: text.primary, flex: 1 }}>{provider.name}</Typography>
               <Chip size="small" label={provider.category}
                 sx={{ height: 16, fontSize: 10, bgcolor: 'rgba(0,0,0,0.05)', color: text.tertiary, '& .MuiChip-label': { px: '6px' } }} />
-              <Button size="small" onClick={() => toast.success(`New ${provider.name} account setup`)}
+              {provider.setupMode && (
+                <Chip size="small" label={setupLabels[provider.setupMode] || provider.setupMode}
+                  sx={{ height: 16, fontSize: 10, bgcolor: 'rgba(94,106,210,0.08)', color: color.functional.primary, '& .MuiChip-label': { px: '6px' } }} />
+              )}
+              {provider.estimatedSetupMinutes && (
+                <Chip size="small" label={`${provider.estimatedSetupMinutes} min setup`}
+                  sx={{ height: 16, fontSize: 10, bgcolor: 'rgba(0,0,0,0.05)', color: text.tertiary, '& .MuiChip-label': { px: '6px' } }} />
+              )}
+              {provider.docsUrl && (
+                <Button size="small" href={provider.docsUrl} target="_blank" rel="noreferrer"
+                  sx={{ fontSize: 10, height: 24, px: '8px', color: text.secondary, border: '1px solid rgba(0,0,0,0.11)' }}>
+                  Guide
+                </Button>
+              )}
+              <Button size="small" disabled={busyProviderId === provider.id} onClick={() => { setConnectTarget(provider); setCredentialValues({}); setConnectOpen(true); }}
                 startIcon={<AddIcon sx={{ fontSize: 12 }} />}
                 sx={{ fontSize: 10, height: 24, px: '8px', color: text.secondary, border: '1px solid rgba(0,0,0,0.11)' }}>
-                Add account
+                {provider.accounts.length ? 'Add account' : 'Connect'}
               </Button>
             </Box>
-            {provider.accounts.map(account => <SourceAccountRow key={account.id} account={account} />)}
+            {provider.accounts.length ? (
+              provider.accounts.map(account => (
+                <SourceAccountRow
+                  key={account.id}
+                  account={account}
+                  provider={provider}
+                  busy={busyProviderId === provider.id}
+                  onSync={onSync}
+                  onDisconnect={onDisconnect}
+                />
+              ))
+            ) : (
+              <Box sx={{ display: 'flex', alignItems: 'center', px: '20px', py: '10px', gap: '12px', borderBottom: '1px solid rgba(0,0,0,0.05)', bgcolor: 'rgba(0,0,0,0.012)' }}>
+                <Box sx={{ width: 20, flexShrink: 0 }} />
+                <Typography sx={{ fontSize: 12, color: text.tertiary, flex: 1 }}>
+                  Not connected yet. {provider.setupNote || 'Connect this provider to begin importing reviews.'}
+                </Typography>
+                <Button size="small" onClick={() => { setConnectTarget(provider); setCredentialValues({}); setConnectOpen(true); }}
+                  sx={{ fontSize: 10, height: 24, px: '8px', color: color.functional.primary, border: `1px solid ${alpha(color.functional.primary, 0.35)}` }}>
+                  Connect
+                </Button>
+              </Box>
+            )}
           </Box>
         ))}
 
-        {/* Available */}
-        <Box sx={{ px: '20px', py: '14px' }}>
-          <Typography sx={{ fontSize: 11, fontWeight: 700, color: text.tertiary, textTransform: 'uppercase', letterSpacing: '0.07em', mb: '10px' }}>
-            Available to connect
-          </Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            {AVAILABLE_SOURCES.map(name => (
-              <Box key={name} onClick={() => { setConnectTarget(name); setConnectOpen(true); }}
-                sx={{ display: 'flex', alignItems: 'center', gap: '8px', px: '12px', py: '7px', border: '1px solid rgba(0,0,0,0.10)', borderRadius: '7px', cursor: 'pointer', bgcolor: 'rgba(0,0,0,0.02)', '&:hover': { bgcolor: 'rgba(0,0,0,0.04)', borderColor: 'rgba(0,0,0,0.18)' }, transition: 'all 0.1s' }}>
-                <Typography sx={{ fontSize: 12, color: text.secondary }}>{name}</Typography>
-              </Box>
-            ))}
-          </Box>
-        </Box>
       </Box>
 
       {/* Connect dialog */}
-      <Dialog open={connectOpen} onClose={() => { setConnectOpen(false); setConnectTarget(''); }} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: '10px' } }}>
-        <DialogTitle sx={{ fontSize: 14, fontWeight: 700 }}>Connect {connectTarget || 'review source'}</DialogTitle>
+      <Dialog open={connectOpen} onClose={() => { setConnectOpen(false); setConnectTarget(null); setCredentialValues({}); }} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: '10px' } }}>
+        <DialogTitle sx={{ fontSize: 14, fontWeight: 700 }}>Connect {connectName}</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '8px !important' }}>
-          {!connectTarget && (
-            <TextField label="Source" placeholder="e.g., Capterra" fullWidth size="small" onChange={e => setConnectTarget(e.target.value)} />
+          {connectTarget && (
+            <Box sx={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {connectTarget.setupMode && (
+                <Chip size="small" label={setupLabels[connectTarget.setupMode] || connectTarget.setupMode}
+                  sx={{ height: 18, fontSize: 10, bgcolor: 'rgba(94,106,210,0.08)', color: color.functional.primary }} />
+              )}
+              {connectTarget.estimatedSetupMinutes && (
+                <Chip size="small" label={`${connectTarget.estimatedSetupMinutes} min setup`}
+                  sx={{ height: 18, fontSize: 10, bgcolor: 'rgba(0,0,0,0.05)', color: text.tertiary }} />
+              )}
+            </Box>
           )}
-          <TextField label="API key" placeholder="Enter API credentials" fullWidth size="small" type="password" />
+          {credentialFields.map(field => (
+            <TextField
+              key={field.name}
+              label={field.label}
+              value={credentialValues[field.name] ?? ''}
+              onChange={e => setCredentialValues(prev => ({ ...prev, [field.name]: e.target.value }))}
+              fullWidth
+              size="small"
+              type={field.type === 'password' ? 'password' : 'text'}
+              required={field.required}
+            />
+          ))}
           <Box sx={{ px: '12px', py: '10px', bgcolor: 'rgba(0,0,0,0.03)', borderRadius: '7px', border: '1px solid rgba(0,0,0,0.08)' }}>
             <Typography sx={{ fontSize: 11, color: text.secondary, lineHeight: 1.6 }}>
-              Orbit requests read-only access. Credentials are encrypted at rest and never used to write to source platforms.
+              {connectTarget?.setupNote || 'Orbit requests read-only access. Credentials are encrypted at rest and never used to write to source platforms.'}
             </Typography>
+            <Typography sx={{ fontSize: 11, color: text.tertiary, lineHeight: 1.6, mt: '6px' }}>
+              {connectTarget?.securityNote || 'Secrets are encrypted at rest. Do not paste unrelated customer data, PHI, or personal data into setup fields.'}
+            </Typography>
+            {connectTarget?.docsUrl && (
+              <Button
+                size="small"
+                href={connectTarget.docsUrl}
+                target="_blank"
+                rel="noreferrer"
+                sx={{ mt: '6px', p: 0, minWidth: 0, fontSize: 11, color: color.functional.primary }}
+              >
+                View setup guide
+              </Button>
+            )}
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2.5 }}>
-          <Button onClick={() => { setConnectOpen(false); setConnectTarget(''); }} sx={{ color: text.secondary }}>Cancel</Button>
-          <Button variant="contained" onClick={() => { toast.success(`${connectTarget} connected — importing reviews`); setConnectOpen(false); setConnectTarget(''); }}
-            sx={{ bgcolor: color.functional.primary }}>Connect</Button>
+          <Button disabled={busy} onClick={() => { setConnectOpen(false); setConnectTarget(null); setCredentialValues({}); }} sx={{ color: text.secondary }}>Cancel</Button>
+          <Button variant="contained" disabled={!connectTarget || busy} onClick={async () => {
+            if (!connectTarget) return;
+            await onConnect?.(connectTarget, credentialValues);
+            setConnectOpen(false);
+            setConnectTarget(null);
+            setCredentialValues({});
+          }} sx={{ bgcolor: color.functional.primary }}>{busy ? 'Connecting...' : 'Connect'}</Button>
         </DialogActions>
       </Dialog>
     </Box>
   );
 }
 
-// ─── Destinations tab ─────────────────────────────────────────────────────────
+// ─── Health tab ───────────────────────────────────────────────────────────────
 
-const DESTINATIONS = [
-  { id: 'jira',   name: 'Jira',            category: 'Issue tracking', status: 'connected' as DestStatus,    last: '2h ago' },
-  { id: 'slack',  name: 'Slack',           category: 'Notifications',  status: 'connected' as DestStatus,    last: '5 min ago' },
-  { id: 'linear', name: 'Linear',          category: 'Issue tracking', status: 'disconnected' as DestStatus, last: '—' },
-  { id: 'teams',  name: 'Microsoft Teams', category: 'Notifications',  status: 'disconnected' as DestStatus, last: '—' },
-  { id: 'email',  name: 'Email (SMTP)',     category: 'Notifications',  status: 'connected' as DestStatus,    last: '12 min ago' },
-  { id: 'zendesk',name: 'Zendesk',         category: 'Support',        status: 'disconnected' as DestStatus, last: '—' },
-  { id: 'pager',  name: 'PagerDuty',       category: 'Incident',       status: 'disconnected' as DestStatus, last: '—' },
-  { id: 'github', name: 'GitHub Issues',   category: 'Issue tracking', status: 'disconnected' as DestStatus, last: '—' },
-];
-
-function DestinationsTab() {
-  return (
-    <Box sx={{ flex: 1, overflow: 'auto', '&::-webkit-scrollbar': { width: 5 } }}>
-      {/* Column headers */}
-      <Box sx={{ display: 'flex', px: '20px', py: '7px', bgcolor: 'rgba(0,0,0,0.025)', borderBottom: '1px solid rgba(0,0,0,0.07)', position: 'sticky', top: 0, zIndex: 5 }}>
-        {[
-          { l: 'Destination', flex: 1 }, { l: 'Category', w: 140 },
-          { l: 'Status', w: 130 }, { l: 'Last used', w: 110 }, { l: '', w: 80 },
-        ].map((col, i) => (
-          <Typography key={i} sx={{ fontSize: 10, fontWeight: 700, color: text.tertiary, textTransform: 'uppercase', letterSpacing: '0.07em', flex: (col as any).flex, width: (col as any).w, flexShrink: (col as any).w ? 0 : undefined }}>
-            {col.l}
-          </Typography>
-        ))}
-      </Box>
-
-      {DESTINATIONS.map(dest => (
-        <Box key={dest.id}
-          sx={{ display: 'flex', alignItems: 'center', px: '20px', py: '11px', borderBottom: '1px solid rgba(0,0,0,0.05)', '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' }, gap: '12px' }}>
-          <Typography sx={{ fontSize: 13, fontWeight: 500, color: text.primary, flex: 1 }}>{dest.name}</Typography>
-          <Typography sx={{ fontSize: 12, color: text.tertiary, width: 140, flexShrink: 0 }}>{dest.category}</Typography>
-          <Box sx={{ width: 130, flexShrink: 0, display: 'flex', alignItems: 'center', gap: '5px' }}>
-            {dest.status === 'connected'
-              ? <OkIcon sx={{ fontSize: 13, color: color.functional.success }} />
-              : dest.status === 'error'
-              ? <WarnIcon sx={{ fontSize: 13, color: color.functional.error }} />
-              : <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: 'rgba(0,0,0,0.18)' }} />}
-            <Typography sx={{ fontSize: 11, fontWeight: 500, color: dest.status === 'connected' ? color.functional.success : dest.status === 'error' ? color.functional.error : text.tertiary, textTransform: 'capitalize' }}>
-              {dest.status === 'connected' ? 'Connected' : dest.status === 'error' ? 'Error' : 'Not connected'}
-            </Typography>
-          </Box>
-          <Typography sx={{ fontSize: 11, color: text.tertiary, width: 110, flexShrink: 0 }}>{dest.last}</Typography>
-          <Box sx={{ width: 80, flexShrink: 0, display: 'flex', justifyContent: 'flex-end', gap: '4px' }}>
-            {dest.status === 'connected' ? (
-              <>
-                <Button size="small" onClick={() => toast.info(`${dest.name} settings`)}
-                  sx={{ fontSize: 10, height: 24, px: '8px', color: text.secondary, border: '1px solid rgba(0,0,0,0.11)' }}>Settings</Button>
-              </>
-            ) : (
-              <Button size="small" onClick={() => toast.success(`${dest.name} connection initiated`)}
-                sx={{ fontSize: 10, height: 24, px: '8px', color: color.functional.primary, border: `1px solid ${color.functional.primary}` }}>Connect</Button>
-            )}
-          </Box>
-        </Box>
-      ))}
-
-      <Box sx={{ px: '20px', py: '12px' }}>
-        <Typography sx={{ fontSize: 11, color: text.tertiary }}>
-          Destinations receive Orbit actions such as issue creation, notifications, and workflow triggers via Automations.
-        </Typography>
-      </Box>
-    </Box>
-  );
+function providerStatus(provider: SourceProvider): SyncStatus {
+  if (provider.accounts.some(account => account.status === 'action_required')) return 'action_required';
+  if (provider.accounts.some(account => account.status === 'syncing')) return 'syncing';
+  if (provider.accounts.some(account => account.status === 'healthy')) return 'healthy';
+  return provider.status ?? 'disconnected';
 }
 
-// ─── Webhooks tab ─────────────────────────────────────────────────────────────
-
-const WEBHOOK_EVENTS = [
-  { id: 'review.created', label: 'Review created' },
-  { id: 'review.negative', label: 'Negative review' },
-  { id: 'review.escalated', label: 'Review escalated' },
-  { id: 'alert.triggered', label: 'Alert triggered' },
-  { id: 'theme.spike', label: 'Theme spike' },
-  { id: 'response.sent', label: 'Response sent' },
-];
-
-interface Webhook {
-  id: string; name: string; url: string; events: string[];
-  active: boolean; status: WebhookStatus;
-  deliveries: number; lastDelivery: string; secret: string;
-}
-
-const INITIAL_WEBHOOKS: Webhook[] = [
-  { id: 'wh1', name: 'CRM Sync', url: 'https://api.acme.com/webhooks/orbit', events: ['review.created', 'review.negative'], active: true, status: 'healthy', deliveries: 1842, lastDelivery: '2 min ago', secret: 'whsec_a1b2c3d4e5f6g7h8' },
-  { id: 'wh2', name: 'Data Warehouse', url: 'https://hooks.acme-bi.io/orbit', events: ['review.created', 'theme.spike', 'alert.triggered'], active: true, status: 'healthy', deliveries: 4201, lastDelivery: '14 min ago', secret: 'whsec_z9y8x7w6v5u4t3s2' },
-  { id: 'wh3', name: 'Notification Service', url: 'https://notify.internal.acme.com/orbit', events: ['review.negative', 'review.escalated'], active: false, status: 'inactive', deliveries: 312, lastDelivery: '3d ago', secret: 'whsec_m1n2o3p4q5r6s7t8' },
-];
-
-function WebhooksTab() {
-  const [webhooks, setWebhooks] = useState(INITIAL_WEBHOOKS);
-  const [addOpen, setAddOpen]   = useState(false);
-  const [detail, setDetail]     = useState<Webhook | null>(null);
-  const [secretVisible, setSecretVisible] = useState(false);
-  const [newName, setNewName]   = useState('');
-  const [newUrl, setNewUrl]     = useState('');
-  const [selectedEvents, setSelectedEvents] = useState<string[]>(['review.created']);
-
-  const toggleActive = (id: string) => {
-    setWebhooks(prev => prev.map(w => w.id === id ? { ...w, active: !w.active, status: (!w.active ? 'healthy' : 'inactive') as WebhookStatus } : w));
-    const wh = webhooks.find(w => w.id === id);
-    toast.success(`${wh?.name} ${wh?.active ? 'paused' : 'enabled'}`);
-  };
-
-  const handleAdd = () => {
-    if (!newName || !newUrl) { toast.error('Name and URL required'); return; }
-    const secret = `whsec_${Math.random().toString(36).substring(2, 18)}`;
-    setWebhooks(prev => [...prev, { id: `wh${Date.now()}`, name: newName, url: newUrl, events: selectedEvents, active: true, status: 'healthy', deliveries: 0, lastDelivery: 'Never', secret }]);
-    toast.success('Webhook endpoint created');
-    setAddOpen(false); setNewName(''); setNewUrl(''); setSelectedEvents(['review.created']);
-  };
+function ConnectionHealthTab({ sources }: { sources: SourceProvider[] }) {
+  const connectedAccounts = sources.reduce((sum, source) => sum + source.accounts.length, 0);
+  const readyProviders = sources.filter(source => providerStatus(source) === 'healthy' || providerStatus(source) === 'syncing').length;
 
   return (
     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      {/* Sub-header */}
-      <Box sx={{ px: '24px', py: '10px', borderBottom: '1px solid rgba(0,0,0,0.07)', display: 'flex', alignItems: 'center', bgcolor: '#FAFAFA', flexShrink: 0 }}>
-        <Typography sx={{ fontSize: 12, color: text.secondary, flex: 1 }}>
-          Outbound webhooks signed with HMAC-SHA256 via <code style={{ fontFamily: 'monospace', fontSize: 11 }}>X-Orbit-Signature</code>
+      <Box sx={{ px: '24px', py: '10px', borderBottom: '1px solid rgba(0,0,0,0.07)', bgcolor: '#FAFAFA', flexShrink: 0 }}>
+        <Typography sx={{ fontSize: 12, color: text.secondary }}>
+          {readyProviders} providers ready · {connectedAccounts} connected accounts · sync jobs run through Orbit Connect
         </Typography>
-        <Button size="small" variant="outlined" startIcon={<AddIcon sx={{ fontSize: 14 }} />}
-          onClick={() => setAddOpen(true)}
-          sx={{ fontSize: 12, height: 30, px: '12px', borderColor: 'rgba(0,0,0,0.15)', color: text.secondary }}>
-          Add endpoint
-        </Button>
       </Box>
-
-      {/* Column headers */}
       <Box sx={{ display: 'flex', px: '20px', py: '7px', bgcolor: 'rgba(0,0,0,0.025)', borderBottom: '1px solid rgba(0,0,0,0.07)', flexShrink: 0, gap: '12px' }}>
         {[
-          { l: 'Endpoint', flex: 2 }, { l: 'Status', w: 90 }, { l: 'Deliveries', w: 90 },
-          { l: 'Last delivery', w: 110 }, { l: '', w: 120 },
+          { l: 'Provider', flex: 1 }, { l: 'Connection', w: 130 }, { l: 'Accounts', w: 90, right: true },
+          { l: 'Auth', w: 130 }, { l: 'Last sync', w: 130 }, { l: 'Capabilities', flex: 1 },
         ].map((col, i) => (
-          <Typography key={i} sx={{ fontSize: 10, fontWeight: 700, color: text.tertiary, textTransform: 'uppercase', letterSpacing: '0.07em', flex: (col as any).flex, width: (col as any).w, flexShrink: (col as any).w ? 0 : undefined }}>
+          <Typography key={i} sx={{ fontSize: 10, fontWeight: 700, color: text.tertiary, textTransform: 'uppercase', letterSpacing: '0.07em', flex: (col as any).flex, width: (col as any).w, flexShrink: (col as any).w ? 0 : undefined, textAlign: (col as any).right ? 'right' : 'left' }}>
             {col.l}
           </Typography>
         ))}
       </Box>
-
-      {/* Webhook rows */}
       <Box sx={{ flex: 1, overflow: 'auto', '&::-webkit-scrollbar': { width: 5 } }}>
-        {webhooks.map(wh => {
-          const stColor = wh.status === 'healthy' ? color.functional.success : wh.status === 'failing' ? color.functional.error : text.tertiary;
+        {sources.map(provider => {
+          const status = providerStatus(provider);
+          const sm = statusMeta[status];
           return (
-            <Box key={wh.id} sx={{ display: 'flex', alignItems: 'center', px: '20px', py: '11px', borderBottom: '1px solid rgba(0,0,0,0.05)', gap: '12px', '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' }, opacity: wh.active ? 1 : 0.55 }}>
-              <Box sx={{ flex: 2, minWidth: 0 }}>
-                <Typography sx={{ fontSize: 13, fontWeight: 600, color: text.primary, mb: '2px' }}>{wh.name}</Typography>
-                <Typography sx={{ fontSize: 11, fontFamily: 'monospace', color: text.tertiary }} noWrap>{wh.url}</Typography>
-                <Box sx={{ display: 'flex', gap: '4px', mt: '4px', flexWrap: 'wrap' }}>
-                  {wh.events.map(ev => (
-                    <Chip key={ev} size="small" label={ev}
-                      sx={{ height: 16, fontSize: 10, fontFamily: 'monospace', bgcolor: 'rgba(0,0,0,0.04)', color: text.tertiary, '& .MuiChip-label': { px: '5px' } }} />
-                  ))}
-                </Box>
+            <Box key={provider.id} sx={{ display: 'flex', alignItems: 'center', px: '20px', py: '11px', gap: '12px', borderBottom: '1px solid rgba(0,0,0,0.05)', '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' } }}>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography sx={{ fontSize: 13, fontWeight: 600, color: text.primary }}>{provider.name}</Typography>
+                <Typography sx={{ fontSize: 11, color: text.tertiary }}>{provider.category}</Typography>
               </Box>
-              <Box sx={{ width: 90, flexShrink: 0 }}>
-                <Typography sx={{ fontSize: 11, fontWeight: 600, color: stColor, textTransform: 'capitalize' }}>{wh.status}</Typography>
+              <Box sx={{ width: 130, flexShrink: 0, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                {sm.icon}
+                <Typography sx={{ fontSize: 11, fontWeight: 600, color: sm.color }}>{sm.label}</Typography>
               </Box>
-              <Typography sx={{ fontSize: 12, fontWeight: 500, color: text.secondary, width: 90, flexShrink: 0 }}>{wh.deliveries.toLocaleString()}</Typography>
-              <Typography sx={{ fontSize: 11, color: text.tertiary, width: 110, flexShrink: 0 }}>{wh.lastDelivery}</Typography>
-              <Box sx={{ width: 120, flexShrink: 0, display: 'flex', gap: '4px', justifyContent: 'flex-end', alignItems: 'center' }}>
-                <Button size="small" onClick={() => setDetail(wh)}
-                  sx={{ fontSize: 10, height: 24, px: '8px', color: color.functional.primary }}>Details</Button>
-                <Button size="small" onClick={() => toggleActive(wh.id)}
-                  sx={{ fontSize: 10, height: 24, px: '8px', color: text.tertiary, border: '1px solid rgba(0,0,0,0.10)' }}>
-                  {wh.active ? 'Pause' : 'Enable'}
-                </Button>
-                <Tooltip title="Delete">
-                  <IconButton size="small" onClick={() => { setWebhooks(prev => prev.filter(w => w.id !== wh.id)); toast.success(`${wh.name} deleted`); }} sx={{ color: text.tertiary }}>
-                    <DeleteIcon sx={{ fontSize: 14 }} />
-                  </IconButton>
-                </Tooltip>
+              <Typography sx={{ width: 90, flexShrink: 0, textAlign: 'right', fontSize: 12, fontWeight: 600, color: text.secondary }}>{provider.accounts.length}</Typography>
+              <Typography sx={{ width: 130, flexShrink: 0, fontSize: 12, color: text.secondary }}>{setupLabels[provider.setupMode || ''] || provider.authType || 'API token'}</Typography>
+              <Typography sx={{ width: 130, flexShrink: 0, fontSize: 11, color: text.tertiary }}>{provider.lastSync || 'Never'}</Typography>
+              <Box sx={{ flex: 1, minWidth: 0, display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                {(provider.capabilities || []).slice(0, 4).map(capability => (
+                  <Chip key={capability} size="small" label={capability.replace(/_/g, ' ')}
+                    sx={{ height: 16, fontSize: 10, bgcolor: 'rgba(0,0,0,0.04)', color: text.tertiary, '& .MuiChip-label': { px: '5px' } }} />
+                ))}
               </Box>
             </Box>
           );
         })}
-        {webhooks.length === 0 && (
-          <Box sx={{ py: 6, textAlign: 'center' }}>
-            <Typography sx={{ fontSize: 13, color: text.tertiary }}>No webhook endpoints configured</Typography>
-          </Box>
-        )}
       </Box>
+    </Box>
+  );
+}
 
-      {/* Add endpoint dialog */}
-      <Dialog open={addOpen} onClose={() => setAddOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '10px' } }}>
-        <DialogTitle sx={{ fontSize: 14, fontWeight: 700 }}>Add webhook endpoint</DialogTitle>
-        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '8px !important' }}>
-          <TextField label="Name" placeholder="e.g., CRM Sync" value={newName} onChange={e => setNewName(e.target.value)} fullWidth size="small" />
-          <TextField label="Payload URL" placeholder="https://api.example.com/webhooks" value={newUrl} onChange={e => setNewUrl(e.target.value)} fullWidth size="small" helperText="HTTPS endpoints only" />
-          <Box>
-            <Typography sx={{ fontSize: 12, fontWeight: 600, color: text.secondary, mb: '8px' }}>Events</Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {WEBHOOK_EVENTS.map(ev => {
-                const checked = selectedEvents.includes(ev.id);
-                return (
-                  <Box key={ev.id} onClick={() => setSelectedEvents(prev => checked ? prev.filter(e => e !== ev.id) : [...prev, ev.id])}
-                    sx={{ display: 'flex', alignItems: 'center', gap: '10px', px: '12px', py: '7px', borderRadius: '6px', cursor: 'pointer', border: `1px solid ${checked ? 'rgba(94,106,210,0.25)' : 'rgba(0,0,0,0.08)'}`, bgcolor: checked ? 'rgba(94,106,210,0.04)' : 'transparent', '&:hover': { borderColor: 'rgba(94,106,210,0.20)' } }}>
-                    <Box sx={{ width: 14, height: 14, borderRadius: '3px', border: `2px solid ${checked ? color.functional.primary : 'rgba(0,0,0,0.20)'}`, bgcolor: checked ? color.functional.primary : 'transparent', flexShrink: 0 }} />
-                    <Typography sx={{ fontSize: 12, fontFamily: 'monospace', color: text.secondary }}>{ev.id}</Typography>
-                    <Typography sx={{ fontSize: 12, color: text.tertiary, flex: 1 }}>{ev.label}</Typography>
-                  </Box>
-                );
-              })}
-            </Box>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2.5 }}>
-          <Button onClick={() => setAddOpen(false)} sx={{ color: text.secondary }}>Cancel</Button>
-          <Button variant="contained" onClick={handleAdd} sx={{ bgcolor: color.functional.primary }}>Create endpoint</Button>
-        </DialogActions>
-      </Dialog>
+// ─── Setup and security tab ──────────────────────────────────────────────────
 
-      {/* Detail dialog */}
-      {detail && (
-        <Dialog open={!!detail} onClose={() => { setDetail(null); setSecretVisible(false); }} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '10px' } }}>
-          <DialogTitle sx={{ fontSize: 14, fontWeight: 700 }}>{detail.name}</DialogTitle>
-          <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '8px !important' }}>
-            <Box>
-              <Typography sx={{ fontSize: 11, fontWeight: 600, color: text.tertiary, textTransform: 'uppercase', letterSpacing: '0.06em', mb: '6px' }}>Payload URL</Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px', px: '12px', py: '8px', bgcolor: 'rgba(0,0,0,0.03)', borderRadius: '7px', border: '1px solid rgba(0,0,0,0.08)' }}>
-                <Typography sx={{ fontSize: 12, fontFamily: 'monospace', color: text.primary, flex: 1, wordBreak: 'break-all' }}>{detail.url}</Typography>
-                <Tooltip title="Copy">
-                  <IconButton size="small" onClick={() => { navigator.clipboard.writeText(detail.url); toast.success('Copied'); }}>
-                    <CopyIcon sx={{ fontSize: 14 }} />
-                  </IconButton>
-                </Tooltip>
+function SetupSecurityTab({ sources }: { sources: SourceProvider[] }) {
+  return (
+    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <Box sx={{ px: '24px', py: '10px', borderBottom: '1px solid rgba(0,0,0,0.07)', bgcolor: '#FAFAFA', flexShrink: 0 }}>
+        <Typography sx={{ fontSize: 12, color: text.secondary }}>
+          Each provider shows exactly what an admin needs before connecting. Secrets are encrypted at rest and setup fields should not contain PHI.
+        </Typography>
+      </Box>
+      <Box sx={{ display: 'flex', px: '20px', py: '7px', bgcolor: 'rgba(0,0,0,0.025)', borderBottom: '1px solid rgba(0,0,0,0.07)', flexShrink: 0, gap: '12px' }}>
+        {[
+          { l: 'Provider', flex: 1 }, { l: 'Setup', w: 130 }, { l: 'Required', flex: 1 }, { l: 'Security posture', flex: 1 }, { l: '', w: 80 },
+        ].map((col, i) => (
+          <Typography key={i} sx={{ fontSize: 10, fontWeight: 700, color: text.tertiary, textTransform: 'uppercase', letterSpacing: '0.07em', flex: (col as any).flex, width: (col as any).w, flexShrink: (col as any).w ? 0 : undefined }}>
+            {col.l}
+          </Typography>
+        ))}
+      </Box>
+      <Box sx={{ flex: 1, overflow: 'auto', '&::-webkit-scrollbar': { width: 5 } }}>
+        {sources.map(provider => {
+          const required = provider.credentialFields?.length
+            ? provider.credentialFields.map(field => field.label).join(', ')
+            : provider.authType === 'oauth2' ? 'Workspace admin OAuth consent' : 'API token';
+
+          return (
+            <Box key={provider.id} sx={{ display: 'flex', alignItems: 'flex-start', px: '20px', py: '12px', gap: '12px', borderBottom: '1px solid rgba(0,0,0,0.05)', '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' } }}>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography sx={{ fontSize: 13, fontWeight: 600, color: text.primary }}>{provider.name}</Typography>
+                <Typography sx={{ fontSize: 11, color: text.tertiary, lineHeight: 1.45 }}>{provider.setupNote || 'Connect this provider to import reviews.'}</Typography>
+              </Box>
+              <Typography sx={{ width: 130, flexShrink: 0, fontSize: 12, color: text.secondary }}>{setupLabels[provider.setupMode || ''] || provider.authType || 'API token'}</Typography>
+              <Typography sx={{ flex: 1, minWidth: 0, fontSize: 12, color: text.secondary, lineHeight: 1.45 }}>{required}</Typography>
+              <Typography sx={{ flex: 1, minWidth: 0, fontSize: 12, color: text.secondary, lineHeight: 1.45 }}>{provider.securityNote || 'Credentials are encrypted at rest.'}</Typography>
+              <Box sx={{ width: 80, flexShrink: 0, display: 'flex', justifyContent: 'flex-end' }}>
+                {provider.docsUrl && (
+                  <Button size="small" href={provider.docsUrl} target="_blank" rel="noreferrer"
+                    sx={{ fontSize: 10, height: 24, px: '8px', color: color.functional.primary, border: `1px solid ${alpha(color.functional.primary, 0.35)}` }}>
+                    Guide
+                  </Button>
+                )}
               </Box>
             </Box>
-            <Box>
-              <Typography sx={{ fontSize: 11, fontWeight: 600, color: text.tertiary, textTransform: 'uppercase', letterSpacing: '0.06em', mb: '6px' }}>Signing secret</Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px', px: '12px', py: '8px', bgcolor: 'rgba(0,0,0,0.03)', borderRadius: '7px', border: '1px solid rgba(0,0,0,0.08)' }}>
-                <Typography sx={{ fontSize: 12, fontFamily: 'monospace', color: text.primary, flex: 1 }}>
-                  {secretVisible ? detail.secret : detail.secret.substring(0, 8) + '••••••••••••'}
-                </Typography>
-                <Button size="small" onClick={() => setSecretVisible(!secretVisible)} sx={{ fontSize: 10, color: text.tertiary, minWidth: 0, px: '6px' }}>
-                  {secretVisible ? 'Hide' : 'Reveal'}
-                </Button>
-                <Tooltip title="Copy">
-                  <IconButton size="small" onClick={() => { navigator.clipboard.writeText(detail.secret); toast.success('Secret copied'); }}>
-                    <CopyIcon sx={{ fontSize: 14 }} />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-            </Box>
-            <Box sx={{ display: 'flex', gap: '24px' }}>
-              <Box>
-                <Typography sx={{ fontSize: 20, fontWeight: 800, color: text.primary, lineHeight: 1 }}>{detail.deliveries.toLocaleString()}</Typography>
-                <Typography sx={{ fontSize: 10, color: text.tertiary }}>total deliveries</Typography>
-              </Box>
-              <Box>
-                <Typography sx={{ fontSize: 14, fontWeight: 600, color: text.primary }}>{detail.lastDelivery}</Typography>
-                <Typography sx={{ fontSize: 10, color: text.tertiary }}>last delivery</Typography>
-              </Box>
-            </Box>
-          </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
-            <Button onClick={() => toast.success('Test payload sent')} sx={{ color: text.secondary }}>Send test</Button>
-            <Box sx={{ flex: 1 }} />
-            <Button onClick={() => { setDetail(null); setSecretVisible(false); }} sx={{ color: text.secondary }}>Close</Button>
-          </DialogActions>
-        </Dialog>
-      )}
+          );
+        })}
+      </Box>
     </Box>
   );
 }
 
 // ─── Main view ────────────────────────────────────────────────────────────────
 
-export const ConnectionsView = ({ sources = SOURCES }: { sources?: SourceProvider[] }) => {
+export const ConnectionsView = ({
+  sources = SOURCES,
+  busyProviderId,
+  onConnect,
+  onSync,
+  onDisconnect,
+}: {
+  sources?: SourceProvider[];
+  busyProviderId?: string | null;
+  onConnect?: ProviderAction;
+  onSync?: ConnectionAction;
+  onDisconnect?: ConnectionAction;
+}) => {
   const [tab, setTab] = useState(0);
 
   const actionRequired = sources.flatMap(p => p.accounts).filter(a => a.status === 'action_required').length;
@@ -501,7 +490,7 @@ export const ConnectionsView = ({ sources = SOURCES }: { sources?: SourceProvide
               sx={{ height: 16, fontSize: 10, fontWeight: 700, bgcolor: 'rgba(220,38,38,0.09)', color: color.functional.error, '& .MuiChip-label': { px: '6px' } }} />
           )}
         </Box>
-        <Typography sx={{ fontSize: 11, color: text.tertiary }}>Review sources, action destinations, and webhook endpoints</Typography>
+        <Typography sx={{ fontSize: 11, color: text.tertiary }}>Review platform connections, sync health, and secure setup</Typography>
       </Box>
 
       {/* Tabs */}
@@ -510,14 +499,22 @@ export const ConnectionsView = ({ sources = SOURCES }: { sources?: SourceProvide
           '& .MuiTab-root': { minHeight: 40, py: 0, fontSize: 13, px: '4px', mr: '16px', fontWeight: 500 },
           '& .MuiTabs-indicator': { height: 2 } }}>
         <Tab label="Review sources" />
-        <Tab label="Destinations" />
-        <Tab label="Webhooks" />
+        <Tab label="Health" />
+        <Tab label="Setup & security" />
       </Tabs>
 
       {/* Content */}
-      {tab === 0 && <ReviewSourcesTab sources={sources} />}
-      {tab === 1 && <DestinationsTab />}
-      {tab === 2 && <WebhooksTab />}
+      {tab === 0 && (
+        <ReviewSourcesTab
+          sources={sources}
+          busyProviderId={busyProviderId}
+          onConnect={onConnect}
+          onSync={onSync}
+          onDisconnect={onDisconnect}
+        />
+      )}
+      {tab === 1 && <ConnectionHealthTab sources={sources} />}
+      {tab === 2 && <SetupSecurityTab sources={sources} />}
     </Box>
   );
 };

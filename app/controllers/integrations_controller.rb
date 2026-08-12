@@ -79,7 +79,8 @@ class IntegrationsController < ApplicationController
       provider_key: params[:provider_key],
       workspace: Current.workspace,
       initiator: Current.user,
-      credentials: credential_params
+      credentials: credential_params,
+      connection_settings: credential_settings_params
     )
 
     render json: {
@@ -133,7 +134,25 @@ class IntegrationsController < ApplicationController
   end
 
   def credential_params
-    params.permit!.except(:controller, :action, :workspace_id, :provider_key).to_h
+    provider_class = OrbitConnect.provider_class(params[:provider_key])
+    field_names = provider_class.credential_fields.map { |field| field.fetch(:name).to_s }
+
+    params.permit(*field_names).to_h
+  end
+
+  def credential_settings_params
+    secret_names = %w[
+      api_key
+      access_token
+      refresh_token
+      client_secret
+      password
+      private_key
+      secret
+      token
+    ]
+
+    credential_params.except(*secret_names)
   end
 
   def provider_app_params

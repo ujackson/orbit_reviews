@@ -42,7 +42,8 @@ Supported backend rule families:
 - WorkOS login, callback, and logout flows are implemented
 - Session restoration happens in `Authentication`
 - `Current` carries `user` and `workspace`
-- `Workspace` is the only persisted tenant model in the current schema
+- `Workspace` is the tenant root in the current schema
+- Conversations, messages, contacts, OrbitConnect connections/provider apps, review-domain records, memberships, automation rules/runs, AI runs/artifacts, and embedding records are persisted locally
 - Setup is a multi-step session-backed flow: `workspace -> team -> channels -> complete`
 - Inertia shared flash props are configured
 - Serializer-backed generated frontend types exist for setup and workspace
@@ -51,10 +52,9 @@ Supported backend rule families:
 
 These should be treated as planned architecture, not current fact:
 
-- local RBAC tables and policy layer
-- local memberships/users domain model
-- conversation/message/contact/integration persistence
-- audit log persistence
+- full RBAC enforcement and policy layer
+- complete team invitation/user-management workflows
+- complete persisted settings for billing, security, notifications, and appearance
 - rules engine persistence
 - billing/security management backends
 
@@ -78,6 +78,8 @@ Do not write docs or code comments that present those as already implemented.
 - New tenant-owned models should use `workspace_id`, not a parallel tenant key, unless the architecture is explicitly changed everywhere.
 - `WorkspaceOwnable` is the intended concern for tenant-scoped records.
 - Tenant context must be derived server-side from `Current.workspace`; never trust client-provided workspace identifiers for authorization.
+- The `:workspace_id` route segment is navigation context only. Authorization must still come from the restored WorkOS session and `Current.workspace`.
+- Refactors should prefer explicit `Current.workspace.association` queries in controllers/services. If relying on `WorkspaceOwnable` default scope, add cross-workspace tests and make the dependency obvious.
 
 ### 2.3 Inertia contract rules
 
@@ -142,6 +144,22 @@ This means the initializer is not yet test-safe.
 
 `test/controllers/auth_controller_test.rb` references route helpers that do not match the current routing table. Any backend test work should verify route names with `bundle exec rails routes` first.
 
+### 4.4 Implemented-domain drift
+
+This document previously described conversations, messages, contacts, integrations, memberships, review data, and automation persistence as not yet implemented. The current schema and models now include those domains. Future refactors should treat those as live data surfaces, not placeholders.
+
+### 4.5 Implicit workspace-scope drift
+
+Several page controllers query workspace-owned models directly, for example `Review.order`, `ReviewAlert.order`, `ReviewInsight.order`, `ReviewTheme.order`, `AutomationRule.order`, `ReviewSourceAccount.order`, and `Membership.includes`. Those models currently rely on `WorkspaceOwnable` default scope for tenant isolation. This is functional when `Current.workspace` is present, but fragile during refactors because removing the concern, using `unscoped`, or moving the query outside request context can leak data. Prefer explicit workspace associations for new or touched code.
+
+### 4.6 Duplicate AI route surface
+
+AI/RAG endpoints exist under the exported `/w/:workspace_id/api/...` routes and also under legacy `/workspaces/:workspace_id/...` routes. Frontend and new tests should treat `/w/:workspace_id/api/...` as canonical unless a compatibility requirement explicitly keeps the legacy surface.
+
+### 4.7 Frontend prototype/live-data split
+
+Many feature views still contain large static datasets and local-only workflow state (`InboxView`, `HomeView`, `ConnectionsView`, `AutomationsView`, `TeamView`, `ReportsView`, `CompetitorsView`, settings sections). Some pages already adapt serializer-backed props before passing data into those views. Refactors should migrate one screen at a time toward Rails-owned props or API-backed hooks and should not copy static constants as the source of truth for persisted domains.
+
 ---
 
 ## 5. Backend Decision Rules
@@ -153,6 +171,7 @@ Use this when deciding what Orbit backend features already exist.
 - Prefer current schema, routes, controllers, serializers, and tests over older prompts or roadmap docs.
 - Separate implemented behavior from planned architecture.
 - If a stale file contradicts the working stack, name the drift explicitly before changing behavior.
+- Treat persisted review/inbox, integrations, conversation, AI, membership, and automation records as live backend surfaces.
 
 ### 5.2 `backend/inertia-contracts`
 
@@ -162,6 +181,8 @@ Use this for controllers, page props, serializers, and frontend-generated types.
 - Serializer output is the main backend/frontend data boundary.
 - Typelizer output should track serializer-backed props.
 - Keep shared Inertia behavior centralized.
+- Do not add hand-written frontend mock data for records that already have serializers or generated types; use server props, route helpers, or API hooks.
+- Keep one canonical route/helper per feature path where possible. When duplicate routes exist, refactor consumers toward the exported workspace route before adding new variants.
 
 ### 5.3 `backend/auth-tenancy`
 
@@ -171,6 +192,7 @@ Use this for WorkOS, workspace context, and tenant-scoped models.
 - New tenant-owned models should default to local workspace scoping.
 - Do not claim local RBAC or organization-sync behavior is implemented unless the supporting models and data flows exist.
 - Use the `workos` MCP server when auth changes need current WorkOS details.
+- Route params, serialized workspace ids, and client-selected workspace ids are not authorization proof.
 
 ---
 
@@ -181,6 +203,8 @@ Use this for WorkOS, workspace context, and tenant-scoped models.
 - Keep auth, redirects, setup flow, and prop shaping in controllers.
 - Move shared controller behavior into concerns or `InertiaController`.
 - Avoid coupling controller behavior to speculative future models.
+- For workspace-owned records, prefer `Current.workspace.<association>` or a clearly named scoped query over bare model queries.
+- Add or update cross-workspace tests whenever changing page controllers, API controllers, serializers, or services that read tenant-owned records.
 
 ### 6.2 Models
 
@@ -192,6 +216,8 @@ Use this for WorkOS, workspace context, and tenant-scoped models.
 
 - Generated route helpers and generated types are part of the contract surface.
 - Backend changes that alter props, routes, or setup payloads should consider the generated frontend artifacts.
+- Feature views may keep ephemeral UI state locally, but persisted business state should enter through Inertia props, generated route helpers, typed API calls, or explicit hooks.
+- Settings controls for security, billing, notifications, and user management should be treated as UI scaffolding until backed by Rails routes, models, and tests.
 
 ### 6.4 Tests and tooling
 

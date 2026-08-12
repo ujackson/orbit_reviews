@@ -13,7 +13,12 @@ module OrbitConnect
           OrbitConnect::Providers::Intercom,
           OrbitConnect::Providers::Discord,
           OrbitConnect::Providers::Notion,
-          OrbitConnect::Providers::Stripe
+          OrbitConnect::Providers::Stripe,
+          OrbitConnect::Providers::GoogleBusiness,
+          OrbitConnect::Providers::Trustpilot,
+          OrbitConnect::Providers::AppleAppStore,
+          OrbitConnect::Providers::GooglePlay,
+          OrbitConnect::Providers::G2
         ].each do |provider_class|
           OrbitConnect.registry.register(provider_class)
         end

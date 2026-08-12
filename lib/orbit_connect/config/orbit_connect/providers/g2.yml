@@ -1,0 +1,13 @@
+id: g2
+name: G2
+description: Sync product reviews from G2.
+category: reviews
+auth_type: api_key
+icon: Reviews
+color: "#FF492C"
+enabled: true
+provider_class: OrbitConnect::Providers::G2
+docs_slug: g2
+setup_steps:
+  - title: Connect G2
+    description: Add a G2 API token and product identifier.

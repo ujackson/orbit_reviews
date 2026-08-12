@@ -23,3 +23,8 @@ categories:
     label: "Development"
     icon: "Code"
     description: "Developer tools and platforms"
+
+  reviews:
+    label: "Review platforms"
+    icon: "Star"
+    description: "Customer review sources for reviews intelligence"

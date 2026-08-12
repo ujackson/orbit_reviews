@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Connect Google Play</title>
+    <style>
+      body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 40px; max-width: 760px; color: #111827; line-height: 1.55; }
+      h1 { font-size: 28px; margin-bottom: 8px; }
+      h2 { font-size: 18px; margin-top: 28px; }
+      li { margin: 8px 0; }
+    </style>
+  </head>
+  <body>
+    <h1>Connect Google Play</h1>
+    <p>Google Play review sync can use OAuth or a service account. For server-side sync, Orbit recommends a least-privilege service account.</p>
+    <h2>What you need</h2>
+    <ul>
+      <li>Google Play Developer API access.</li>
+      <li>A service account with review permissions.</li>
+      <li>The app package name, such as com.example.app.</li>
+    </ul>
+    <h2>Security</h2>
+    <p>Service account JSON is encrypted at rest. Rotate the credential if the service account is removed or permissions change.</p>
+  </body>
+</html>

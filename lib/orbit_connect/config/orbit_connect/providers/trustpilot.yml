@@ -1,0 +1,13 @@
+id: trustpilot
+name: Trustpilot
+description: Sync Trustpilot service reviews into Orbit.
+category: reviews
+auth_type: api_key
+icon: Star
+color: "#00B67A"
+enabled: true
+provider_class: OrbitConnect::Providers::Trustpilot
+docs_slug: trustpilot
+setup_steps:
+  - title: Connect Trustpilot
+    description: Add a Trustpilot Business API token and optional business unit ID.
