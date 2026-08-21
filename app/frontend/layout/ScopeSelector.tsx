@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { Box, Typography, Menu, MenuItem, Divider, alpha } from '@mui/material';
 import { ExpandMore as ChevronIcon, CalendarToday as CalIcon } from '@mui/icons-material';
-import { color, text, transition } from '@/shared/tokens/design-tokens';
+import { color, text, transition } from '../shared/tokens/design-tokens';
 
 interface ScopeOption { label: string; value: string }
 
-const BRANDS: ScopeOption[] = [
-  { label: 'All brands', value: 'all' },
-  { label: 'Orbit Mobile', value: 'mobile' },
-  { label: 'Orbit Consumer', value: 'consumer' },
-  { label: 'Orbit Enterprise', value: 'enterprise' },
+const SCOPES: ScopeOption[] = [
+  { label: 'All scopes', value: 'all' },
+  { label: 'Downtown Location', value: 'downtown' },
+  { label: 'Online Experience', value: 'digital' },
+  { label: 'Customer Support', value: 'support' },
 ];
 const REGIONS: ScopeOption[] = [
   { label: 'All regions', value: 'all' },
@@ -39,15 +39,15 @@ function ScopeSegment({
         onClick={e => setAnchor(e.currentTarget)}
         sx={{
           display: 'flex', alignItems: 'center', gap: '3px',
-          px: '7px', py: '4px', borderRadius: '6px', cursor: 'pointer',
+          px: '6px', py: '3px', borderRadius: '5px', cursor: 'pointer',
           transition: `background ${transition.duration.fast}`,
           '&:hover': { bgcolor: alpha(color.neutral[900], 0.06) },
         }}
       >
-        <Typography sx={{ fontSize: 12, color: text.secondary, fontWeight: 600 }}>
+        <Typography sx={{ fontSize: 12, color: text.secondary, fontWeight: 400 }}>
           {current}
         </Typography>
-        <ChevronIcon sx={{ fontSize: 14, color: text.tertiary }} />
+        <ChevronIcon sx={{ fontSize: 13, color: text.tertiary }} />
       </Box>
       <Menu
         anchorEl={anchor}
@@ -82,16 +82,16 @@ function Sep() {
 }
 
 export function ScopeSelector() {
-  const [brand, setBrand] = useState('all');
+  const [scope, setScope] = useState('all');
   const [region, setRegion] = useState('all');
   const [dateRange, setDateRange] = useState('30d');
 
   return (
     <Box
       sx={{
-        height: 40,
-        borderBottom: '1px solid #E5E7EB',
-        bgcolor: '#fff',
+        height: 36,
+        borderBottom: '1px solid #E7E9EE',
+        bgcolor: '#FFFFFF',
         display: 'flex',
         alignItems: 'center',
         px: '24px',
@@ -99,26 +99,25 @@ export function ScopeSelector() {
         flexShrink: 0,
       }}
     >
-      {/* Workspace (non-clickable, links to switcher) */}
-      <Typography sx={{ fontSize: 12, color: text.secondary, fontWeight: 600, pl: '6px' }}>
-        Acme Corp
+      <Typography sx={{ fontSize: 12, color: text.tertiary, fontWeight: 500, pl: '6px' }}>
+        Northstar Group
       </Typography>
       <Sep />
 
-      <ScopeSegment label="Brand / Product" value={brand} options={BRANDS} onChange={setBrand} />
+      <ScopeSegment label="Business scope" value={scope} options={SCOPES} onChange={setScope} />
       <Sep />
 
       <ScopeSegment label="Region" value={region} options={REGIONS} onChange={setRegion} />
       <Sep />
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-        <CalIcon sx={{ fontSize: 13, color: text.tertiary }} />
+        <CalIcon sx={{ fontSize: 12, color: text.tertiary }} />
         <ScopeSegment label="Date range" value={dateRange} options={DATE_RANGES} onChange={setDateRange} />
       </Box>
 
       <Box sx={{ flex: 1 }} />
 
-      <Typography sx={{ fontSize: 12, color: text.tertiary, fontWeight: 500 }}>
+      <Typography sx={{ fontSize: 11, color: text.tertiary }}>
         Updated 2 min ago
       </Typography>
     </Box>

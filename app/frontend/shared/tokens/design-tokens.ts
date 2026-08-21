@@ -33,70 +33,80 @@ export const color = {
   
   // AI accent - heavily desaturated for tinted neutrality (enterprise AI uses tinted neutrals, not bright colors)
   ai: {
-    50: '#F9F8FC',   // Further reduced saturation - barely perceptible violet
-    100: '#F3F1F9',  // Tinted neutral, not accent color
-    200: '#E9E5F7',  // 12-15% less saturated than original
-    300: '#D8CEF3',  // Intelligence tint, not decoration
-    400: '#C1AEEF',  // Reduced saturation
-    500: '#A28BE8',  // Primary AI tint - significantly desaturated from #8B5CF6
-    600: '#8B6FD9',  // Desaturated
-    700: '#7659C6',  // Desaturated
-    800: '#624AAD',  // Desaturated
-    900: '#523E91',  // Desaturated
+    50: '#F9F8FC',
+    100: '#F3F1F9',
+    200: '#E9E5F7',
+    300: '#D8CEF3',
+    400: '#C1AEEF',
+    500: '#A28BE8',
+    600: '#8B6FD9',
+    700: '#7659C6',
+    800: '#624AAD',
+    900: '#523E91',
   },
   
-  // Functional colors — reserved use: active nav, primary CTA, selected state, brand moments
+  // Functional colors — enterprise semantic palette
   functional: {
-    primary:      '#5B5BD6',  // Orbit brand indigo — use sparingly
-    primaryHover: '#4F46E5',
-    success:      '#059669',
-    warning:      '#D97706',
-    error:        '#DC2626',
-    errorHover:   '#B91C1C',
-    errorSubtle:  '#FCA5A5',
-    info:         '#2563EB',
+    primary:       '#5B5FEF',
+    primaryHover:  '#4E51DA',
+    primaryPressed:'#4447C4',
+    primarySoft:   '#F2F2FD',
+    primaryBorder: '#D9D9FA',
+    success:       '#07875F',
+    successLight:  '#EBFAF4',
+    successBorder: '#A7F3D0',
+    warning:       '#B76E00',
+    warningLight:  '#FFF8E6',
+    warningBorder: '#FDE68A',
+    error:         '#D92D3A',
+    errorHover:    '#B4232F',
+    errorLight:    '#FFF1F2',
+    errorBorder:   '#FECDCA',
+    info:          '#3568D4',
+    infoLight:     '#EFF4FF',
+    slate:         '#171A21',
+    selectedTint:  '#F4F4FC',
+  },
+
+  nav: {
+    bg:          '#FFFFFF',
+    subtle:      '#FBFBFC',
+    border:      '#E7E9EE',
+    textInactive:'#667085',
+    textActive:  '#4E51DA',
+    activeBg:    '#F1F1FC',
+    indicator:   '#5B5FEF',
+    sectionLabel:'#98A2B3',
+  },
+
+  canvas: {
+    bg:          '#F7F8FA',
+    surface:     '#FFFFFF',
+    raised:      '#FBFBFC',
+    selected:    '#F4F4FC',
+    border:      '#E7E9EE',
+    borderStrong:'#D8DCE5',
   },
   
-  // Channel colors - reduced saturation for informational badges (not decorative)
   channel: {
-    email: '#3B8FB8',      // Desaturated by 15%
-    slack: '#7D5AC9',      // Desaturated by 15%
-    whatsapp: '#2D9B75',   // Desaturated by 15%
-    instagram: '#C94C8A',  // Desaturated by 15%
-    sms: '#8B6FD9',        // Desaturated by 15%
+    email: '#3B8FB8',
+    slack: '#7D5AC9',
+    whatsapp: '#2D9B75',
+    instagram: '#C94C8A',
+    sms: '#8B6FD9',
   },
   
-  // ============================================================================
-  // SEMANTIC SURFACE TOKENS - The Four Color Layers
-  // ============================================================================
-  
-  // Layer 1: Environment (System Chrome)
-  // Purpose: Structure & stability - fades into background cognition
-  // Rules: No strong color, no gradients, no visual noise
   surface: {
-    environment: '#F8FAFC',           // Rail, command bar, system chrome
-    environmentHover: '#F3F4F6',      // Subtle hover state (+3% darkening)
-    
-    // Layer 2: Navigation Surface
-    // Purpose: Conversation list - neutral navigation context
-    navigation: '#F9FAFB',            // Slightly lighter than environment
-    navigationHover: '#F3F4F6',       // Hover state
-    
-    // Layer 3: Work Surface (Primary Cognitive Anchor)
-    // Purpose: Thread panel - center of gravity, slightly warm
-    // Rules: 1-2% warmer than navigation, minimal borders, zero accent unless acting
-    work: '#FFFFFF',                  // Primary work surface
-    workSubtle: '#F9FAFB',            // Subtle surface differentiation
-    
-    // Layer 4: Intelligence Surface (AI Panel)
-    // Purpose: AI thinking layer - tinted neutrality, not bright color
-    // Rules: 2-4% violet tint, extremely low saturation
-    ai: '#FAFAFD',                    // Faint violet-neutral tint (3% violet)
-    aiSubtle: '#FCFCFE',              // Nearly invisible violet tint for AI components
-    aiAccent: '#F9F8FC',              // Subtle AI component backgrounds
-    
-    // Primary surface (used for panels, modals, slide panels)
-    primary: '#FFFFFF',               // Pure white for overlays and panels
+    environment: '#FAFAFA',
+    environmentHover: '#F0F0F0',
+    navigation: '#FCFCFC',
+    navigationHover: '#F5F5F5',
+    work: '#FFFEFB',
+    workSubtle: '#FFFCF8',
+    ai: '#FAFAFD',
+    aiSubtle: '#FCFCFE',
+    aiAccent: '#F9F8FC',
+    primary: '#FFFFFF',
   },
 } as const;
 
@@ -104,26 +114,22 @@ export const color = {
 // SEMANTIC ACTION TOKENS - Decision Colors (2-3% of UI)
 // ============================================================================
 
-// Action colors should be RARE and INTENTIONAL
-// Used only for: Send button, Use Draft, Focus rings, Primary CTAs
 export const action = {
-  primary: '#5E6AD2',                 // Primary decision color
-  primaryHover: '#4E5BBD',            // Hover state
-  primaryPressed: '#3E4AAD',          // Active/pressed state
-  primaryFocus: 'rgba(94, 106, 210, 0.08)', // Focus ring
+  primary: '#5E6AD2',
+  primaryHover: '#4E5BBD',
+  primaryPressed: '#3E4AAD',
+  primaryFocus: 'rgba(94, 106, 210, 0.08)',
 } as const;
 
 // ============================================================================
 // SEMANTIC STATUS TOKENS - Informational Color (rare, desaturated)
 // ============================================================================
 
-// Status colors inform - they do NOT dominate
-// Rules: 10-15% less saturated than primitive, avoid pure red
 export const status = {
   urgent: {
-    bg: 'rgba(232, 124, 124, 0.12)',   // Desaturated red background
-    text: 'rgba(220, 38, 38, 0.75)',   // Muted red text - readable but not dominant
-    border: 'rgba(220, 38, 38, 0.15)', // Subtle border
+    bg: 'rgba(232, 124, 124, 0.12)',
+    text: 'rgba(220, 38, 38, 0.75)',
+    border: 'rgba(220, 38, 38, 0.15)',
   },
   success: {
     bg: 'rgba(5, 150, 105, 0.10)',
@@ -149,12 +155,12 @@ export const status = {
 export const spacing = {
   0: '0px',
   4: '4px',
-  6: '6px', // Added for tighter chip padding
+  6: '6px',
   8: '8px',
-  10: '10px', // Added for conversation row density
+  10: '10px',
   12: '12px',
   16: '16px',
-  20: '20px', // Added for AI summary dominance
+  20: '20px',
   24: '24px',
   32: '32px',
   48: '48px',
@@ -167,13 +173,11 @@ export const spacing = {
 // ============================================================================
 
 export const typography = {
-  // Font families
   fontFamily: {
     base: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
     mono: '"SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, monospace',
   },
   
-  // Font sizes
   fontSize: {
     xs: '11px',
     sm: '12px',
@@ -184,21 +188,18 @@ export const typography = {
     xxl: '18px',
   },
   
-  // Font weights - strategic emphasis
   fontWeight: {
-    normal: 400,
+    normal: 500,
     medium: 500,
     semibold: 600,
   },
   
-  // Line heights
   lineHeight: {
     tight: 1.4,
     base: 1.5,
     relaxed: 1.6,
   },
   
-  // Letter spacing
   letterSpacing: {
     tight: '-0.01em',
     normal: '0',
@@ -314,10 +315,10 @@ export const aiVisualLanguage = {
 // ============================================================================
 
 export const text = {
-  primary:   '#111827',  // gray-900 — high contrast, legible
-  secondary: '#4B5563',  // gray-600 — secondary labels and body metadata
-  tertiary:  '#6B7280',  // gray-500 — timestamps and low-priority metadata
-  disabled:  '#9CA3AF',  // gray-400 — disabled/helper-only text
+  primary:   '#171A21',
+  secondary: '#525B69',
+  tertiary:  '#7F8897',
+  disabled:  '#AAB2BF',
   inverse:   '#FFFFFF',
 } as const;
 

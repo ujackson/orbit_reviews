@@ -4,18 +4,16 @@ import {
   ListItemIcon, ListItemText, Box, Typography, Chip, alpha, Divider,
 } from '@mui/material';
 import {
-  Home as HomeIcon, Inbox as InboxIcon, AutoGraph as InsightsIcon,
-  BubbleChart as ThemesIcon, NotificationsNone as AlertsIcon,
-  Leaderboard as CompetitorsIcon, Assessment as ReportsIcon,
-  Hub as SourcesIcon, AccountTree as AutomationsIcon,
-  Cable as ConnectionsIcon, Group as TeamIcon,
-  Settings as SettingsIcon, Search as SearchIcon,
+  Dashboard as OverviewIcon, Inbox as FeedbackIcon, BugReport as IssuesIcon,
+  TaskAlt as ActionsIcon, TrendingUp as ImpactIcon,
+  Cable as IntegrationsIcon, AccountTree as AutomationsIcon,
+  Group as TeamIcon, Settings as SettingsIcon, Search as SearchIcon,
   DarkMode as DarkIcon, LightMode as LightIcon,
 } from '@mui/icons-material';
 import { useUIStore } from '../stores/uiStore';
 import { useNavigate, useWorkspacePath } from '@/hooks/useInertiaNavigation';
 import { toast } from 'sonner';
-import { color, text, radius } from '@/shared/tokens/design-tokens';
+import { color, text, radius } from '../shared/tokens/design-tokens';
 
 interface Command {
   id: string;
@@ -35,24 +33,23 @@ export const CommandPalette = () => {
   const [search, setSearch] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  const go = (path: string) => navigate(workspacePath(path === 'home' ? '' : path));
+  const go = (path: string) => navigate(workspacePath(path));
 
   const commands: Command[] = [
     // Navigation
-    { id: 'home',        label: 'Go to Home',         icon: <HomeIcon fontSize="small" />,        keywords: ['home', 'overview', 'what changed', 'briefing'], action: () => go('home'),        category: 'Navigation', shortcut: 'G H' },
-    { id: 'inbox',       label: 'Go to Inbox',         icon: <InboxIcon fontSize="small" />,       keywords: ['inbox', 'reviews', 'response', 'queue'],        action: () => go('inbox'),       category: 'Navigation', shortcut: 'G I' },
-    { id: 'insights',    label: 'Go to Insights',      icon: <InsightsIcon fontSize="small" />,    keywords: ['insights', 'patterns', 'analysis', 'detected'],  action: () => go('insights'),    category: 'Navigation', shortcut: 'G N' },
-    { id: 'themes',      label: 'Go to Themes',        icon: <ThemesIcon fontSize="small" />,      keywords: ['themes', 'topics', 'clusters'],                  action: () => go('themes'),      category: 'Navigation', shortcut: 'G T' },
-    { id: 'alerts',      label: 'Go to Alerts',        icon: <AlertsIcon fontSize="small" />,      keywords: ['alerts', 'notifications', 'anomalies'],           action: () => go('alerts'),      category: 'Navigation' },
-    { id: 'competitors', label: 'Go to Competitors',   icon: <CompetitorsIcon fontSize="small" />, keywords: ['competitors', 'compare', 'benchmark'],            action: () => go('competitors'), category: 'Navigation' },
-    { id: 'reports',     label: 'Go to Reports',       icon: <ReportsIcon fontSize="small" />,     keywords: ['reports', 'export', 'weekly', 'monthly'],         action: () => go('reports'),     category: 'Navigation' },
-    { id: 'connections', label: 'Go to Connections',    icon: <SourcesIcon fontSize="small" />,     keywords: ['connections', 'sources', 'integrations', 'webhooks', 'sync', 'platforms', 'destinations'], action: () => go('connections'), category: 'Navigation' },
-    { id: 'automations', label: 'Go to Automations',   icon: <AutomationsIcon fontSize="small" />, keywords: ['automations', 'workflows', 'triggers'],           action: () => go('automations'), category: 'Navigation' },
-    { id: 'team',        label: 'Go to Team',          icon: <TeamIcon fontSize="small" />,        keywords: ['team', 'members', 'roles', 'permissions'],        action: () => go('team'),        category: 'Navigation' },
-    { id: 'settings',    label: 'Go to Settings',      icon: <SettingsIcon fontSize="small" />,    keywords: ['settings', 'preferences', 'config'],              action: () => go('settings'),    category: 'Navigation', shortcut: 'G S' },
+    { id: 'overview',     label: 'Go to Overview',      icon: <OverviewIcon fontSize="small" />,     keywords: ['overview', 'home', 'priority issues', 'command center'], action: () => go(''),            category: 'Navigation', shortcut: 'G H' },
+    { id: 'issues',       label: 'Go to Issues',         icon: <IssuesIcon fontSize="small" />,       keywords: ['issues', 'insights', 'themes', 'alerts', 'problems'],    action: () => go('insights'),    category: 'Navigation', shortcut: 'G I' },
+    { id: 'feedback',     label: 'Go to Feedback',       icon: <FeedbackIcon fontSize="small" />,     keywords: ['feedback', 'inbox', 'reviews', 'response', 'queue'],     action: () => go('inbox'),       category: 'Navigation', shortcut: 'G F' },
+    { id: 'actions',      label: 'Go to Actions',        icon: <ActionsIcon fontSize="small" />,      keywords: ['actions', 'tasks', 'corrective', 'due', 'overdue'],      action: () => go('alerts'),      category: 'Navigation', shortcut: 'G A' },
+    { id: 'impact',       label: 'Go to Impact',         icon: <ImpactIcon fontSize="small" />,       keywords: ['impact', 'reports', 'outcomes', 'verified', 'before after'], action: () => go('reports'), category: 'Navigation' },
+    { id: 'integrations', label: 'Go to Integrations',   icon: <IntegrationsIcon fontSize="small" />, keywords: ['integrations', 'connections', 'sources', 'webhooks'],    action: () => go('connections'), category: 'Navigation' },
+    { id: 'automations',  label: 'Go to Automations',    icon: <AutomationsIcon fontSize="small" />,  keywords: ['automations', 'workflows', 'triggers'],                  action: () => go('automations'),  category: 'Navigation' },
+    { id: 'team',         label: 'Go to Team',           icon: <TeamIcon fontSize="small" />,         keywords: ['team', 'members', 'roles', 'permissions'],               action: () => go('team'),         category: 'Navigation' },
+    { id: 'settings',     label: 'Go to Settings',       icon: <SettingsIcon fontSize="small" />,     keywords: ['settings', 'preferences', 'config'],                     action: () => go('settings'),     category: 'Navigation', shortcut: 'G S' },
     // Actions
-    { id: 'draft-response', label: 'Draft response to selected review', icon: <InboxIcon fontSize="small" />, keywords: ['draft', 'reply', 'respond', 'response'], action: () => { go('inbox'); toast.success('Opening inbox — select a review to draft a response'); }, category: 'Actions' },
-    { id: 'create-alert',   label: 'Create alert rule',                 icon: <AlertsIcon fontSize="small" />, keywords: ['alert', 'rule', 'create'],              action: () => { go('automations'); toast.info('Opening automations to create an alert rule'); }, category: 'Actions' },
+    { id: 'create-issue',   label: 'Create issue',              icon: <IssuesIcon fontSize="small" />,   keywords: ['create', 'issue', 'new'],                action: () => { go('insights'); toast.info('Opening Issues'); }, category: 'Actions' },
+    { id: 'draft-response', label: 'Draft response to feedback',icon: <FeedbackIcon fontSize="small" />, keywords: ['draft', 'reply', 'respond', 'response'], action: () => { go('inbox'); toast.success('Opening Feedback — select a review to draft a response'); }, category: 'Actions' },
+    { id: 'create-action',  label: 'Create corrective action',  icon: <ActionsIcon fontSize="small" />,  keywords: ['action', 'corrective', 'create'],        action: () => { go('alerts'); toast.info('Opening Actions'); }, category: 'Actions' },
     { id: 'toggle-theme',   label: `Switch to ${theme === 'light' ? 'dark' : 'light'} mode`, icon: theme === 'light' ? <DarkIcon fontSize="small" /> : <LightIcon fontSize="small" />, keywords: ['theme', 'dark', 'light', 'mode'], action: toggleTheme, category: 'Settings' },
   ];
 

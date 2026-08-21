@@ -48,12 +48,12 @@ export function PageShell({ title, subtitle, badge, actions, tabs, children }: P
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography sx={{ fontSize: 15, fontWeight: 700, color: text.primary, letterSpacing: '-0.01em' }}>
+                <Typography sx={{ fontSize: 15, fontWeight: 600, color: text.primary, letterSpacing: '-0.01em' }}>
                   {title}
                 </Typography>
                 {badge && bc && (
                   <Chip size="small" label={badge.label}
-                    sx={{ height: 18, fontSize: 10, fontWeight: 700, bgcolor: bc.bg, color: bc.fg, '& .MuiChip-label': { px: '6px' } }} />
+                    sx={{ height: 18, fontSize: 10, fontWeight: 600, bgcolor: bc.bg, color: bc.fg, '& .MuiChip-label': { px: '6px' } }} />
                 )}
               </Box>
               {subtitle && (
@@ -79,7 +79,7 @@ export function PageShell({ title, subtitle, badge, actions, tabs, children }: P
 export function SectionLabel({ label, action, onAction }: { label: string; action?: string; onAction?: () => void }) {
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-      <Typography sx={{ fontSize: 10, fontWeight: 700, color: text.tertiary, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+      <Typography sx={{ fontSize: 10, fontWeight: 600, color: text.tertiary, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
         {label}
       </Typography>
       {action && onAction && (
@@ -130,7 +130,7 @@ export function StatCard({ label, value, delta, deltaDir = 'up', sub, sparkData,
       </Typography>
       <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 1 }}>
         <Box>
-          <Typography sx={{ fontSize: 22, fontWeight: 800, color: text.primary, lineHeight: 1, letterSpacing: '-0.02em', mb: 0.75 }}>
+          <Typography sx={{ fontSize: 22, fontWeight: 600, color: text.primary, lineHeight: 1, letterSpacing: '-0.02em', mb: 0.75 }}>
             {value}
           </Typography>
           {delta && (
@@ -189,7 +189,7 @@ export function DataTable({ columns, children, emptyState }: DataTableProps) {
         {columns.map(col => (
           <Typography key={col.label}
             sx={{
-              fontSize: 10, fontWeight: 700, color: text.tertiary,
+              fontSize: 10, fontWeight: 600, color: text.tertiary,
               textTransform: 'uppercase', letterSpacing: '0.07em',
               width: col.width, flex: col.width ? undefined : 1,
               textAlign: col.align || 'left',
@@ -279,7 +279,7 @@ export function StatusBadge({ label, variant = 'neutral', size = 'sm' }: { label
   return (
     <Chip size="small" label={label}
       sx={{
-        height: heights[size], fontSize: fontSizes[size], fontWeight: 700,
+        height: heights[size], fontSize: fontSizes[size], fontWeight: 600,
         bgcolor: s.bg, color: s.fg,
         '& .MuiChip-label': { px: size === 'md' ? '8px' : '6px' },
       }} />

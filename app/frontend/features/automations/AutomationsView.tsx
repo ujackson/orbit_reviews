@@ -6,7 +6,7 @@ import {
 } from '@mui/material';
 import {
   Add as AddIcon, PlayArrow as RunIcon, Delete as DeleteIcon,
-  ArrowForward, CheckCircle, Error as ErrIcon,
+  ArrowForward, MoreHoriz as MoreIcon, CheckCircle, Error as ErrIcon,
 } from '@mui/icons-material';
 import { color, text, radius } from '../../shared/tokens/design-tokens';
 import { toast } from 'sonner';
@@ -35,7 +35,7 @@ const ACTIONS_LIST = [
 
 type AutoStatus = 'active' | 'paused' | 'failing';
 
-export interface Automation {
+interface Automation {
   id: string;
   name: string;
   trigger: string;
@@ -57,7 +57,7 @@ const INITIAL: Automation[] = [
 
 const statusConfig: Record<AutoStatus, { label: string; color: string }> = {
   active:  { label: 'Active',  color: color.functional.success },
-  paused:  { label: 'Paused',  color: text.secondary },
+  paused:  { label: 'Paused',  color: text.tertiary },
   failing: { label: 'Failing', color: color.functional.error },
 };
 
@@ -134,8 +134,8 @@ function NewAutomationDialog({ open, onClose, onAdd }: { open: boolean; onClose:
   );
 }
 
-export const AutomationsView = ({ automations: initialAutomations }: { automations?: Automation[] }) => {
-  const [automations, setAutomations] = useState(initialAutomations?.length ? initialAutomations : INITIAL);
+export const AutomationsView = () => {
+  const [automations, setAutomations] = useState(INITIAL);
   const [addOpen, setAddOpen]         = useState(false);
 
   const toggleActive = (id: string) => {
@@ -163,7 +163,7 @@ export const AutomationsView = ({ automations: initialAutomations }: { automatio
     <Box sx={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', bgcolor: '#fff' }}>
 
       {/* Header */}
-      <Box sx={{ px: '24px', py: '12px', borderBottom: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+      <Box sx={{ px: '24px', py: '12px', borderBottom: '1px solid #EAECF0', display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
         <Box sx={{ flex: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Typography sx={{ fontSize: 14, fontWeight: 700, color: text.primary, letterSpacing: '-0.01em' }}>Automations</Typography>
@@ -172,7 +172,7 @@ export const AutomationsView = ({ automations: initialAutomations }: { automatio
                 sx={{ height: 16, fontSize: 10, fontWeight: 700, bgcolor: alpha(color.functional.error, 0.09), color: color.functional.error, '& .MuiChip-label': { px: '6px' } }} />
             )}
           </Box>
-          <Typography sx={{ fontSize: 12, color: text.tertiary, fontWeight: 500 }}>
+          <Typography sx={{ fontSize: 11, color: text.tertiary }}>
             {activeCount} active · {automations.length} total · trigger-based workflow rules
           </Typography>
         </Box>
@@ -183,7 +183,7 @@ export const AutomationsView = ({ automations: initialAutomations }: { automatio
       </Box>
 
       {/* Column headers */}
-      <Box sx={{ display: 'flex', px: '20px', py: '8px', bgcolor: '#F9FAFB', borderBottom: '1px solid #E5E7EB', flexShrink: 0, gap: '12px' }}>
+      <Box sx={{ display: 'flex', px: '20px', py: '7px', bgcolor: 'rgba(0,0,0,0.025)', borderBottom: '1px solid #EAECF0', flexShrink: 0, gap: '12px' }}>
         {[
           { l: 'Name',    flex: 1.3 },
           { l: 'Trigger → Action', flex: 2.5 },
@@ -192,7 +192,7 @@ export const AutomationsView = ({ automations: initialAutomations }: { automatio
           { l: 'Status',  w: 90  },
           { l: '',        w: 110 },
         ].map((col, i) => (
-          <Typography key={i} sx={{ fontSize: 11, fontWeight: 700, color: text.tertiary, textTransform: 'uppercase', letterSpacing: '0.07em', flex: (col as any).flex, width: (col as any).w, flexShrink: (col as any).w ? 0 : undefined, textAlign: (col as any).right ? 'right' : 'left' }}>
+          <Typography key={i} sx={{ fontSize: 10, fontWeight: 700, color: text.tertiary, textTransform: 'uppercase', letterSpacing: '0.07em', flex: (col as any).flex, width: (col as any).w, flexShrink: (col as any).w ? 0 : undefined, textAlign: (col as any).right ? 'right' : 'left' }}>
             {col.l}
           </Typography>
         ))}
@@ -205,13 +205,13 @@ export const AutomationsView = ({ automations: initialAutomations }: { automatio
           return (
             <Box key={auto.id}>
               {i > 0 && <Divider sx={{ borderColor: '#F3F4F6' }} />}
-              <Box sx={{ display: 'flex', alignItems: 'center', px: '20px', py: '12px', gap: '12px', bgcolor: auto.status === 'failing' ? alpha(color.functional.error, 0.025) : '#fff', '&:hover': { bgcolor: auto.status === 'failing' ? alpha(color.functional.error, 0.045) : '#F9FAFB' } }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', px: '20px', py: '11px', gap: '12px', opacity: auto.active ? 1 : 0.6, '&:hover': { bgcolor: 'rgba(0,0,0,0.015)' } }}>
 
                 {/* Name */}
                 <Box sx={{ flex: 1.3, minWidth: 0 }}>
-                  <Typography sx={{ fontSize: 14, fontWeight: 700, color: text.primary }} noWrap>{auto.name}</Typography>
+                  <Typography sx={{ fontSize: 13, fontWeight: 600, color: text.primary }} noWrap>{auto.name}</Typography>
                   {auto.failureReason && (
-                    <Typography sx={{ fontSize: 12, color: color.functional.error, fontWeight: 600, mt: '3px', lineHeight: 1.4 }}>
+                    <Typography sx={{ fontSize: 11, color: color.functional.error, mt: '2px', lineHeight: 1.4 }}>
                       {auto.failureReason}
                     </Typography>
                   )}
@@ -220,9 +220,9 @@ export const AutomationsView = ({ automations: initialAutomations }: { automatio
                 {/* Trigger → Action */}
                 <Box sx={{ flex: 2.5, display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
                   <Chip size="small" label={auto.trigger}
-                    sx={{ height: 22, fontSize: 11, fontWeight: 700, bgcolor: alpha(color.functional.warning, 0.10), border: `1px solid ${alpha(color.functional.warning, 0.20)}`, color: color.functional.warning, '& .MuiChip-label': { px: '7px' }, maxWidth: 240 }} />
+                    sx={{ height: 18, fontSize: 10, fontWeight: 500, bgcolor: alpha(color.functional.warning, 0.08), color: color.functional.warning, '& .MuiChip-label': { px: '6px' }, maxWidth: 220 }} />
                   <ArrowForward sx={{ fontSize: 12, color: text.tertiary, flexShrink: 0 }} />
-                  <Typography sx={{ fontSize: 12, color: text.secondary, fontWeight: 500 }} noWrap>{auto.action}</Typography>
+                  <Typography sx={{ fontSize: 11, color: text.secondary }} noWrap>{auto.action}</Typography>
                 </Box>
 
                 {/* Runs */}
@@ -231,7 +231,7 @@ export const AutomationsView = ({ automations: initialAutomations }: { automatio
                 </Typography>
 
                 {/* Last run */}
-                <Typography sx={{ fontSize: 12, color: text.tertiary, fontWeight: 500, width: 100, flexShrink: 0 }}>{auto.lastRun}</Typography>
+                <Typography sx={{ fontSize: 11, color: text.tertiary, width: 100, flexShrink: 0 }}>{auto.lastRun}</Typography>
 
                 {/* Status */}
                 <Box sx={{ width: 90, flexShrink: 0, display: 'flex', alignItems: 'center', gap: '5px' }}>
@@ -240,19 +240,19 @@ export const AutomationsView = ({ automations: initialAutomations }: { automatio
                     : auto.status === 'failing'
                     ? <ErrIcon sx={{ fontSize: 12, color: sc.color }} />
                     : <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: '#D1D5DB' }} />}
-                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: sc.color }}>{sc.label}</Typography>
+                  <Typography sx={{ fontSize: 11, fontWeight: 500, color: sc.color }}>{sc.label}</Typography>
                 </Box>
 
                 {/* Controls */}
                 <Box sx={{ width: 110, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
                   <Switch checked={auto.active} onChange={() => toggleActive(auto.id)} size="small" />
                   <Tooltip title="Run now">
-                    <IconButton size="small" onClick={() => runNow(auto)} sx={{ color: text.secondary, '&:hover': { color: color.functional.primary, bgcolor: alpha(color.functional.primary, 0.08) } }}>
+                    <IconButton size="small" onClick={() => runNow(auto)} sx={{ color: text.tertiary, '&:hover': { color: color.functional.primary } }}>
                       <RunIcon sx={{ fontSize: 15 }} />
                     </IconButton>
                   </Tooltip>
                   <Tooltip title="Delete">
-                    <IconButton size="small" aria-label={`Delete ${auto.name}`} onClick={() => del(auto.id)} sx={{ color: text.tertiary, '&:hover': { color: color.functional.error, bgcolor: alpha(color.functional.error, 0.08) } }}>
+                    <IconButton size="small" onClick={() => del(auto.id)} sx={{ color: text.tertiary, '&:hover': { color: color.functional.error } }}>
                       <DeleteIcon sx={{ fontSize: 15 }} />
                     </IconButton>
                   </Tooltip>
@@ -266,33 +266,13 @@ export const AutomationsView = ({ automations: initialAutomations }: { automatio
           <Box sx={{ py: 8, textAlign: 'center' }}>
             <Typography sx={{ fontSize: 13, color: text.tertiary, mb: '12px' }}>No automations configured</Typography>
             <Button size="small" variant="outlined" onClick={() => setAddOpen(true)}
-              sx={{ fontSize: 12, borderColor: '#E5E7EB', color: text.secondary }}>
+              sx={{ fontSize: 12, borderColor: '#EAECF0', color: text.secondary }}>
               Create your first automation
             </Button>
           </Box>
         )}
 
-        {/* Reference */}
-        <Box sx={{ px: '20px', py: '16px', borderTop: '1px solid #E5E7EB', mt: '4px', display: 'flex', gap: '20px' }}>
-          <Box sx={{ flex: 1 }}>
-            <Typography sx={{ fontSize: 11, fontWeight: 700, color: text.tertiary, textTransform: 'uppercase', letterSpacing: '0.06em', mb: '8px' }}>Available triggers</Typography>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-              {TRIGGERS.map(t => (
-                <Chip key={t} size="small" label={t}
-                  sx={{ height: 22, fontSize: 11, bgcolor: '#F3F4F6', border: '1px solid #E5E7EB', color: text.secondary, '& .MuiChip-label': { px: '7px' } }} />
-              ))}
-            </Box>
-          </Box>
-          <Box sx={{ flex: 1 }}>
-            <Typography sx={{ fontSize: 11, fontWeight: 700, color: text.tertiary, textTransform: 'uppercase', letterSpacing: '0.06em', mb: '8px' }}>Available actions</Typography>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-              {ACTIONS_LIST.map(a => (
-                <Chip key={a} size="small" label={a}
-                  sx={{ height: 22, fontSize: 11, bgcolor: '#F3F4F6', border: '1px solid #E5E7EB', color: text.secondary, '& .MuiChip-label': { px: '7px' } }} />
-              ))}
-            </Box>
-          </Box>
-        </Box>
+        {/* Trigger/action catalogs live inside the creation dialog, not the main page */}
       </Box>
 
       <NewAutomationDialog open={addOpen} onClose={() => setAddOpen(false)} onAdd={a => setAutomations(prev => [...prev, a])} />

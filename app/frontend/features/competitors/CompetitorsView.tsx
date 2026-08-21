@@ -62,7 +62,7 @@ export const CompetitorsView = () => {
       {/* Header */}
       <Box sx={{ px: '24px', py: '12px', borderBottom: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
         <Box sx={{ flex: 1 }}>
-          <Typography sx={{ fontSize: 14, fontWeight: 700, color: text.primary, letterSpacing: '-0.01em' }}>
+          <Typography sx={{ fontSize: 14, fontWeight: 600, color: text.primary, letterSpacing: '-0.01em' }}>
             Competitors
           </Typography>
           <Typography sx={{ fontSize: 11, color: text.tertiary }}>
@@ -108,7 +108,7 @@ export const CompetitorsView = () => {
         <Box sx={{ display: 'flex', gap: '16px' }}>
           {/* Radar */}
           <Box sx={{ flex: 1.2, border: '1px solid #E5E7EB', borderRadius: '8px', p: '16px' }}>
-            <Typography sx={{ fontSize: 12, fontWeight: 700, color: text.primary, mb: '3px' }}>Competitive radar</Typography>
+            <Typography sx={{ fontSize: 12, fontWeight: 600, color: text.primary, mb: '3px' }}>Competitive radar</Typography>
             <Typography sx={{ fontSize: 10, color: text.tertiary, mb: '8px' }}>Score out of 100 per dimension · based on review sentiment analysis</Typography>
             <ResponsiveContainer width="100%" height={220}>
               <RadarChart data={RADAR_DATA}>
@@ -132,7 +132,7 @@ export const CompetitorsView = () => {
 
           {/* Sentiment bar */}
           <Box sx={{ flex: 1, border: '1px solid #E5E7EB', borderRadius: '8px', p: '16px' }}>
-            <Typography sx={{ fontSize: 12, fontWeight: 700, color: text.primary, mb: '3px' }}>Sentiment distribution</Typography>
+            <Typography sx={{ fontSize: 12, fontWeight: 600, color: text.primary, mb: '3px' }}>Sentiment distribution</Typography>
             <Typography sx={{ fontSize: 10, color: text.tertiary, mb: '8px' }}>Positive vs negative % across platforms</Typography>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={SENTIMENT_BAR} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
@@ -152,15 +152,15 @@ export const CompetitorsView = () => {
               <Box key={c.name} sx={{ px: '14px', py: '12px', border: '1px solid #E5E7EB', borderRadius: '8px', bgcolor: '#fff' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px', mb: '8px' }}>
                   <Dot color={c.dot} size={8} />
-                  <Typography sx={{ fontSize: 13, fontWeight: 700, color: text.primary }}>{c.name}</Typography>
+                  <Typography sx={{ fontSize: 13, fontWeight: 600, color: text.primary }}>{c.name}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', gap: '16px', mb: '8px' }}>
                   <Box>
-                    <Typography sx={{ fontSize: 16, fontWeight: 800, color: text.primary, lineHeight: 1 }}>★ {c.rating}</Typography>
+                    <Typography sx={{ fontSize: 16, fontWeight: 600, color: text.primary, lineHeight: 1 }}>★ {c.rating}</Typography>
                     <Typography sx={{ fontSize: 9, color: text.tertiary }}>avg rating</Typography>
                   </Box>
                   <Box>
-                    <Typography sx={{ fontSize: 16, fontWeight: 800, color: text.primary, lineHeight: 1 }}>{c.sentiment}%</Typography>
+                    <Typography sx={{ fontSize: 16, fontWeight: 600, color: text.primary, lineHeight: 1 }}>{c.sentiment}%</Typography>
                     <Typography sx={{ fontSize: 9, color: text.tertiary }}>positive</Typography>
                   </Box>
                 </Box>
@@ -179,7 +179,7 @@ export const CompetitorsView = () => {
             {/* Headers */}
             <Box sx={{ display: 'flex', px: '16px', py: '8px', bgcolor: 'rgba(0,0,0,0.025)', borderBottom: '1px solid #E5E7EB' }}>
               {['Metric', 'Orbit', 'Intercom', 'Zendesk', 'Analysis'].map((h, i) => (
-                <Typography key={h} sx={{ fontSize: 10, fontWeight: 700, color: text.tertiary, textTransform: 'uppercase', letterSpacing: '0.07em', flex: i === 0 ? 1.5 : i === 4 ? 2 : 1, textAlign: i > 0 && i < 4 ? 'center' : 'left' }}>
+                <Typography key={h} sx={{ fontSize: 10, fontWeight: 600, color: text.tertiary, textTransform: 'uppercase', letterSpacing: '0.07em', flex: i === 0 ? 1.5 : i === 4 ? 2 : 1, textAlign: i > 0 && i < 4 ? 'center' : 'left' }}>
                   {h}
                 </Typography>
               ))}

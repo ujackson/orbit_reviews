@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Box, Typography, alpha, Button, Chip, Divider, Avatar, Dialog, DialogTitle, DialogContent, DialogActions, TextField, FormControl, InputLabel, Select, MenuItem, LinearProgress } from '@mui/material';
 import { Add as AddIcon, MoreVert as MoreIcon, Mail as MailIcon } from '@mui/icons-material';
 import { color, text, radius } from '../../shared/tokens/design-tokens';
-import { PageShell, SectionLabel, StatusBadge, DataTable, DataRow, StatCard } from '../../shared/enterprise';
+import { PageShell, SectionLabel, StatusBadge, DataTable, DataRow } from '../../shared/enterprise';
 import { toast } from 'sonner';
 
 type Role = 'Admin' | 'Manager' | 'Agent' | 'Viewer';
@@ -156,12 +156,37 @@ export const TeamView = () => {
         </Button>
       }
     >
-      {/* Team KPIs */}
-      <Box sx={{ display: 'flex', gap: 1.25, mb: 3 }}>
-        <StatCard label="Active Members" value={`${active.length}`} sub={`of ${MEMBERS.length} total`} />
-        <StatCard label="Reviews Handled" value={totalReviews.toLocaleString()} delta="+18%" deltaDir="up" sub="this month" />
-        <StatCard label="Avg Response Rate" value={`${avgRate}%`} delta="+7pp" deltaDir="up" sub="vs last month" />
-        <StatCard label="Avg Response Time" value="2.8h" delta="-0.4h" deltaDir="up" sub="faster" />
+      {/* Team KPIs — continuous metric strip matching Overview */}
+      <Box sx={{
+        display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
+        bgcolor: '#fff', border: '1px solid #E7E9EE',
+        borderRadius: '10px', mb: '20px', overflow: 'hidden',
+      }}>
+        {[
+          { label: 'Active members',    value: String(active.length),              sub: `of ${MEMBERS.length} total`,   valueColor: '#171A21' },
+          { label: 'Reviews handled',   value: totalReviews.toLocaleString(),       sub: '+18% this month',              valueColor: '#07875F' },
+          { label: 'Avg response rate', value: `${avgRate}%`,                       sub: '+7pp vs last month',           valueColor: '#171A21' },
+          { label: 'Avg response time', value: '2.8h',                              sub: '0.4h faster than last month',  valueColor: '#171A21' },
+        ].map((kpi, i) => (
+          <Box key={kpi.label} sx={{
+            px: '22px', py: '18px',
+            borderRight: i < 3 ? '1px solid #E7E9EE' : 'none',
+          }}>
+            <Typography sx={{ fontSize: 11, fontWeight: 600, color: '#9299A6', mb: '6px', letterSpacing: '0.01em' }}>
+              {kpi.label}
+            </Typography>
+            <Typography sx={{
+              fontSize: 32, fontWeight: 600, color: kpi.valueColor,
+              letterSpacing: '-0.035em', lineHeight: 1, mb: '4px',
+              fontVariantNumeric: 'tabular-nums',
+            }}>
+              {kpi.value}
+            </Typography>
+            <Typography sx={{ fontSize: 11, color: '#9299A6', fontWeight: 500 }}>
+              {kpi.sub}
+            </Typography>
+          </Box>
+        ))}
       </Box>
 
       {/* Member table */}

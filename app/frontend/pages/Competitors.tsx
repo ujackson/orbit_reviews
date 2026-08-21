@@ -1,10 +1,10 @@
-import { CompetitorsView } from '@/features/competitors/CompetitorsView';
+import { IssuesView } from '@/features/issues/IssuesView';
 import { OrbitReviewsPage } from './OrbitReviewsPage';
 
 export default function Competitors() {
   return (
-    <OrbitReviewsPage title="Competitors">
-      <CompetitorsView />
+    <OrbitReviewsPage title="Issues">
+      <IssuesView />
     </OrbitReviewsPage>
   );
 }

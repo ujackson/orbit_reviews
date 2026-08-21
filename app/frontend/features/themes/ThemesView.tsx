@@ -8,15 +8,13 @@ import {
 } from '@mui/icons-material';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip as RTooltip } from 'recharts';
 import { color, text, radius } from '../../shared/tokens/design-tokens';
-import { useNavigate } from '@/hooks/useInertiaNavigation';
-import { useWorkspace } from '@/providers/WorkspaceProvider';
 
 const mk = (v: number[]) => v.map(n => ({ v: n }));
 
 type ThemeStatus = 'active' | 'rising' | 'declining' | 'stable';
 type Sentiment = 'negative' | 'positive' | 'mixed';
 
-export interface Theme {
+interface Theme {
   id: string;
   name: string;
   reviewCount: number;
@@ -134,14 +132,14 @@ function ThemeDetail({ theme, onClose }: { theme: Theme; onClose: () => void }) 
     <Box sx={{ width: 360, flexShrink: 0, bgcolor: '#fff', borderLeft: '1px solid rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <Box sx={{ px: '18px', py: '12px', borderBottom: '1px solid rgba(0,0,0,0.07)', display: 'flex', alignItems: 'flex-start', gap: '8px', flexShrink: 0 }}>
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography sx={{ fontSize: 14, fontWeight: 700, color: text.primary, mb: '4px' }}>{theme.name}</Typography>
+          <Typography sx={{ fontSize: 14, fontWeight: 600, color: text.primary, mb: '4px' }}>{theme.name}</Typography>
           <Box sx={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <Typography sx={{ fontSize: 13, fontWeight: 800, color: text.primary }}>{theme.reviewCount.toLocaleString()}</Typography>
+            <Typography sx={{ fontSize: 13, fontWeight: 600, color: text.primary }}>{theme.reviewCount.toLocaleString()}</Typography>
             <Typography sx={{ fontSize: 12, color: text.tertiary }}>reviews · {theme.shareOfReviews} of total</Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: '5px', mt: '3px' }}>
             {theme.changeDir === 'up' ? <ArrowUpward sx={{ fontSize: 11, color: changeColor }} /> : <ArrowDownward sx={{ fontSize: 11, color: changeColor }} />}
-            <Typography sx={{ fontSize: 12, fontWeight: 700, color: changeColor }}>{theme.change} vs prior period</Typography>
+            <Typography sx={{ fontSize: 12, fontWeight: 600, color: changeColor }}>{theme.change} vs prior period</Typography>
             <Typography sx={{ fontSize: 11, color: text.tertiary }}>· {theme.sentimentPct}</Typography>
           </Box>
         </Box>
@@ -152,7 +150,7 @@ function ThemeDetail({ theme, onClose }: { theme: Theme; onClose: () => void }) 
 
         {/* Trend */}
         <Box>
-          <Typography sx={{ fontSize: 10, fontWeight: 700, color: text.tertiary, textTransform: 'uppercase', letterSpacing: '0.07em', mb: '8px' }}>Trend</Typography>
+          <Typography sx={{ fontSize: 10, fontWeight: 600, color: text.tertiary, textTransform: 'uppercase', letterSpacing: '0.07em', mb: '8px' }}>Trend</Typography>
           <ResponsiveContainer width="100%" height={70}>
             <AreaChart data={theme.spark} margin={{ top: 2, right: 2, left: -28, bottom: 0 }}>
               <defs>
@@ -173,13 +171,13 @@ function ThemeDetail({ theme, onClose }: { theme: Theme; onClose: () => void }) 
 
         {/* Summary */}
         <Box>
-          <Typography sx={{ fontSize: 10, fontWeight: 700, color: text.tertiary, textTransform: 'uppercase', letterSpacing: '0.07em', mb: '6px' }}>Summary</Typography>
+          <Typography sx={{ fontSize: 10, fontWeight: 600, color: text.tertiary, textTransform: 'uppercase', letterSpacing: '0.07em', mb: '6px' }}>Summary</Typography>
           <Typography sx={{ fontSize: 12, color: text.secondary, lineHeight: 1.65 }}>{theme.detail.summary}</Typography>
         </Box>
 
         {/* Evidence */}
         <Box>
-          <Typography sx={{ fontSize: 10, fontWeight: 700, color: text.tertiary, textTransform: 'uppercase', letterSpacing: '0.07em', mb: '6px' }}>Evidence</Typography>
+          <Typography sx={{ fontSize: 10, fontWeight: 600, color: text.tertiary, textTransform: 'uppercase', letterSpacing: '0.07em', mb: '6px' }}>Evidence</Typography>
           {theme.detail.evidence.map(e => (
             <Box key={e} sx={{ display: 'flex', gap: '7px', mb: '4px' }}>
               <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: text.tertiary, mt: '5px', flexShrink: 0 }} />
@@ -190,7 +188,7 @@ function ThemeDetail({ theme, onClose }: { theme: Theme; onClose: () => void }) 
 
         {/* Subthemes */}
         <Box>
-          <Typography sx={{ fontSize: 10, fontWeight: 700, color: text.tertiary, textTransform: 'uppercase', letterSpacing: '0.07em', mb: '6px' }}>Related subthemes</Typography>
+          <Typography sx={{ fontSize: 10, fontWeight: 600, color: text.tertiary, textTransform: 'uppercase', letterSpacing: '0.07em', mb: '6px' }}>Related subthemes</Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
             {theme.detail.subthemes.map(s => (
               <Chip key={s} size="small" label={s}
@@ -201,7 +199,7 @@ function ThemeDetail({ theme, onClose }: { theme: Theme; onClose: () => void }) 
 
         {/* Emerging phrases */}
         <Box>
-          <Typography sx={{ fontSize: 10, fontWeight: 700, color: text.tertiary, textTransform: 'uppercase', letterSpacing: '0.07em', mb: '6px' }}>Emerging phrases</Typography>
+          <Typography sx={{ fontSize: 10, fontWeight: 600, color: text.tertiary, textTransform: 'uppercase', letterSpacing: '0.07em', mb: '6px' }}>Emerging phrases</Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
             {theme.detail.emergingPhrases.map(p => (
               <Chip key={p} size="small" label={`"${p}"`}
@@ -214,12 +212,11 @@ function ThemeDetail({ theme, onClose }: { theme: Theme; onClose: () => void }) 
   );
 }
 
-export const ThemesView = ({ themes: initialThemes }: { themes?: Theme[] }) => {
-  const themes = initialThemes?.length ? initialThemes : THEMES;
+export const ThemesView = () => {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Theme | null>(null);
 
-  const filtered = themes.filter(t =>
+  const filtered = THEMES.filter(t =>
     !search || t.name.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -227,13 +224,13 @@ export const ThemesView = ({ themes: initialThemes }: { themes?: Theme[] }) => {
     <Box sx={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', bgcolor: '#fff' }}>
       {/* Header */}
       <Box sx={{ px: '24px', py: '12px', borderBottom: '1px solid rgba(0,0,0,0.07)', flexShrink: 0 }}>
-        <Typography sx={{ fontSize: 14, fontWeight: 700, color: text.primary, letterSpacing: '-0.01em' }}>Themes</Typography>
+        <Typography sx={{ fontSize: 14, fontWeight: 600, color: text.primary, letterSpacing: '-0.01em' }}>Themes</Typography>
         <Typography sx={{ fontSize: 11, color: text.tertiary }}>Persistent customer topics detected across all review sources</Typography>
       </Box>
 
       {/* Filter bar — no permanent definitional text */}
-      <Box sx={{ px: '24px', py: '8px', borderBottom: '1px solid rgba(0,0,0,0.06)', bgcolor: '#FAFAFA', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-        <Typography sx={{ fontSize: 11, color: text.tertiary }}>{themes.length} themes · ranked by review volume</Typography>
+      <Box sx={{ px: '24px', py: '8px', borderBottom: '1px solid rgba(0,0,0,0.06)', bgcolor: '#F8F9FC', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+        <Typography sx={{ fontSize: 11, color: text.tertiary }}>{THEMES.length} themes · ranked by review volume</Typography>
         <Box sx={{ flex: 1 }} />
         <TextField size="small" placeholder="Search themes…" value={search} onChange={e => setSearch(e.target.value)}
           InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 14, color: text.tertiary }} /></InputAdornment>, sx: { fontSize: 12, bgcolor: '#fff', '& fieldset': { border: '1px solid rgba(0,0,0,0.12)' }, borderRadius: '6px' } }}
@@ -257,7 +254,7 @@ export const ThemesView = ({ themes: initialThemes }: { themes?: Theme[] }) => {
               { l: 'Status',   w: 90 },
             ].map(col => (
               <Typography key={col.l}
-                sx={{ fontSize: 10, fontWeight: 700, color: text.tertiary, textTransform: 'uppercase', letterSpacing: '0.07em', flex: col.flex, width: col.w, flexShrink: col.w ? 0 : undefined }}>
+                sx={{ fontSize: 10, fontWeight: 600, color: text.tertiary, textTransform: 'uppercase', letterSpacing: '0.07em', flex: col.flex, width: col.w, flexShrink: col.w ? 0 : undefined }}>
                 {col.l}
               </Typography>
             ))}
@@ -293,7 +290,7 @@ export const ThemesView = ({ themes: initialThemes }: { themes?: Theme[] }) => {
                 </Box>
                 <Box sx={{ width: 80, flexShrink: 0, display: 'flex', alignItems: 'center', gap: '2px' }}>
                   {theme.changeDir === 'up' ? <ArrowUpward sx={{ fontSize: 11, color: changeColor }} /> : <ArrowDownward sx={{ fontSize: 11, color: changeColor }} />}
-                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: changeColor }}>{theme.change}</Typography>
+                  <Typography sx={{ fontSize: 12, fontWeight: 600, color: changeColor }}>{theme.change}</Typography>
                 </Box>
                 <Typography sx={{ fontSize: 12, color: text.secondary, width: 70, flexShrink: 0 }}>{theme.sources}</Typography>
                 <Typography sx={{ fontSize: 12, color: text.secondary, width: 80, flexShrink: 0 }}>{theme.products > 0 ? theme.products : '—'}</Typography>

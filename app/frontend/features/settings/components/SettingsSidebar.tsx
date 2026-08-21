@@ -1,9 +1,3 @@
-/**
- * Component: SettingsSidebar
- * 
- * Settings navigation sidebar - enterprise structure.
- */
-
 import { Box, Typography, List, ListItem, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
 import {
   Palette as PaletteIcon,
@@ -12,93 +6,101 @@ import {
   People as PeopleIcon,
   Security as SecurityIcon,
   Payment as PaymentIcon,
+  Logout as LogoutIcon,
 } from '@mui/icons-material';
-import { color, spacing, typography, text, radius, transition, layout } from '../../../shared/tokens/design-tokens';
+import { toast } from 'sonner';
+
+const S = {
+  bg:         '#FFFFFF',
+  border:     '#E7E9EE',
+  inactive:   '#626A78',
+  activeText: '#4E51DA',
+  activeBg:   '#F1F1FC',
+  hover:      'rgba(0,0,0,0.03)',
+  title:      '#171A21',
+  section:    '#9299A6',
+} as const;
 
 interface SettingsSidebarProps {
   selectedSection: string;
-  onSectionChange: (sectionId: string) => void;
+  onSectionChange: (id: string) => void;
 }
 
-export const SettingsSidebar = ({ selectedSection, onSectionChange }: SettingsSidebarProps) => {
-  const sections = [
-    { id: 'appearance', label: 'Appearance', icon: <PaletteIcon /> },
-    { id: 'notifications', label: 'Notifications', icon: <NotificationsIcon /> },
-    { id: 'integrations', label: 'Integrations', icon: <IntegrationIcon /> },
-    { id: 'users', label: 'Users & Roles', icon: <PeopleIcon /> },
-    { id: 'security', label: 'Security', icon: <SecurityIcon /> },
-    { id: 'billing', label: 'Billing', icon: <PaymentIcon /> },
-  ];
+const SECTIONS = [
+  { id: 'appearance',    label: 'Appearance',     Icon: PaletteIcon },
+  { id: 'notifications', label: 'Notifications',  Icon: NotificationsIcon },
+  { id: 'integrations',  label: 'Integrations',   Icon: IntegrationIcon },
+  { id: 'users',         label: 'Users & Roles',  Icon: PeopleIcon },
+  { id: 'security',      label: 'Security',        Icon: SecurityIcon },
+  { id: 'billing',       label: 'Billing',         Icon: PaymentIcon },
+];
 
-  return (
+export const SettingsSidebar = ({ selectedSection, onSectionChange }: SettingsSidebarProps) => (
+  <Box sx={{
+    width: 220,
+    height: '100vh',
+    bgcolor: S.bg,
+    borderRight: `1px solid ${S.border}`,
+    display: 'flex', flexDirection: 'column',
+    py: '20px', px: '12px', flexShrink: 0,
+  }}>
+    <Typography sx={{
+      fontSize: 15, fontWeight: 600, color: S.title,
+      px: '8px', mb: '12px', letterSpacing: '-0.01em',
+    }}>
+      Settings
+    </Typography>
+
+    <List sx={{ p: 0, flex: 1 }}>
+      {SECTIONS.map(({ id, label, Icon }) => {
+        const on = selectedSection === id;
+        return (
+          <ListItem key={id} disablePadding sx={{ mb: '1px' }}>
+            <ListItemButton
+              selected={on}
+              onClick={() => onSectionChange(id)}
+              sx={{
+                borderRadius: '6px', py: '6px', px: '8px', minHeight: 34,
+                bgcolor: on ? S.activeBg : 'transparent',
+                '&.Mui-selected': { bgcolor: S.activeBg, '&:hover': { bgcolor: S.activeBg } },
+                '&:hover': { bgcolor: on ? S.activeBg : S.hover },
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 32, color: on ? S.activeText : S.inactive }}>
+                <Icon sx={{ fontSize: 16 }} />
+              </ListItemIcon>
+              <ListItemText
+                primary={label}
+                primaryTypographyProps={{
+                  fontSize: 13, fontWeight: on ? 600 : 400,
+                  color: on ? S.activeText : S.inactive,
+                  letterSpacing: '-0.005em',
+                }}
+              />
+            </ListItemButton>
+          </ListItem>
+        );
+      })}
+    </List>
+
+    {/* Logout */}
     <Box
+      component="button"
+      onClick={() => toast.info('Signing out…')}
       sx={{
-        width: { xs: 184, md: layout.settingsSidebar.width },
-        height: '100%',
-        bgcolor: color.surface.navigation, // Layer 2 - Navigation surface
-        borderRight: '1px solid #E5E7EB',
-        py: spacing[24],
-        px: { xs: spacing[8], md: spacing[16] },
+        display: 'flex', alignItems: 'center', gap: '8px',
+        width: '100%', px: '8px', py: '6px', mt: '4px',
+        border: 'none', background: 'none', cursor: 'pointer',
+        borderRadius: '6px', textAlign: 'left',
+        color: '#626A78',
+        transition: 'background-color 0.10s, color 0.10s',
+        '&:hover': { bgcolor: '#FFF1F2', color: '#D92D3A' },
       }}
     >
-      <Typography
-        sx={{
-          fontSize: { xs: '18px', md: '20px' },
-          fontWeight: typography.fontWeight.semibold,
-          color: text.primary,
-          px: spacing[12],
-          mb: spacing[16],
-        }}
-      >
-        Settings
+      <LogoutIcon sx={{ fontSize: 16, flexShrink: 0 }} />
+      <Typography sx={{ fontSize: 13, fontWeight: 400, fontFamily: 'inherit', color: 'inherit' }}>
+        Sign out
       </Typography>
-
-      <List sx={{ p: 0 }}>
-        {sections.map((section) => {
-          const isSelected = selectedSection === section.id;
-          
-          return (
-            <ListItem key={section.id} disablePadding sx={{ mb: spacing[4] }}>
-              <ListItemButton
-                selected={isSelected}
-                onClick={() => onSectionChange(section.id)}
-                sx={{
-                  borderRadius: radius.base,
-                  transition: `all ${transition.duration.fast} ${transition.easing.base}`,
-                  '&.Mui-selected': {
-                    bgcolor: '#EEF2FF',
-                    color: color.functional.primary,
-                    '&:hover': {
-                      bgcolor: '#E0E7FF',
-                    },
-                  },
-                  '&:hover': {
-                    bgcolor: '#F3F4F6',
-                  },
-                }}
-              >
-                <ListItemIcon
-                  sx={{
-                    minWidth: 40,
-                    color: isSelected ? color.functional.primary : text.secondary,
-                    transition: `color ${transition.duration.fast} ${transition.easing.base}`,
-                  }}
-                >
-                  {section.icon}
-                </ListItemIcon>
-                <ListItemText
-                  primary={section.label}
-                  primaryTypographyProps={{
-                    fontSize: { xs: typography.fontSize.base, md: typography.fontSize.md },
-                    fontWeight: isSelected ? 700 : 500,
-                    color: isSelected ? color.functional.primary : text.secondary,
-                  }}
-                />
-              </ListItemButton>
-            </ListItem>
-          );
-        })}
-      </List>
     </Box>
-  );
-};
+  </Box>
+);

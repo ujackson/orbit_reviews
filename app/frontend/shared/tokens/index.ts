@@ -76,7 +76,7 @@ export const colors = {
   
   // Channel colors
   email: '#3B82F6',
-  sms: '#10B981',
+  sms: '#07875F',
   whatsapp: '#22C55E',
   instagram: '#EC4899',
   slack: '#8B5CF6',
@@ -84,7 +84,7 @@ export const colors = {
   // Status colors
   urgent: '#E53E3E',
   high: '#F59E0B',
-  normal: '#10B981',
+  normal: '#07875F',
   
   // AI colors
   ai: '#9333EA',

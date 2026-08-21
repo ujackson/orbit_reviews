@@ -51,7 +51,7 @@ export const SettingsView = () => {
   const currentSection = sectionConfig[selectedSection];
 
   return (
-    <Box sx={{ display: 'flex', flex: 1, height: '100%', overflow: 'hidden' }}>
+    <Box sx={{ display: 'flex', flex: 1, height: '100vh', overflow: 'hidden' }}>
       {/* Settings Sidebar */}
       <SettingsSidebar
         selectedSection={selectedSection}
@@ -63,12 +63,12 @@ export const SettingsView = () => {
         sx={{
           flex: 1,
           overflow: 'auto',
-          bgcolor: color.surface.work, // Layer 3 - Work surface (primary focus)
-          px: { xs: spacing[16], md: spacing[48], lg: spacing[64] },
-          py: { xs: spacing[24], md: spacing[48] },
+          bgcolor: '#F7F8FA',
+          px: '48px',
+          py: '36px',
         }}
       >
-        <Box sx={{ maxWidth: 800 }}>
+        <Box sx={{ maxWidth: 900 }}>
           {/* Page header */}
           <SettingsHeader
             title={currentSection.title}

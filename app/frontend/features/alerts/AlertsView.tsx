@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 type Severity = 'critical' | 'high' | 'medium' | 'low';
 type AlertStatus = 'new' | 'acknowledged' | 'investigating' | 'resolved' | 'dismissed';
 
-export interface Alert {
+interface Alert {
   id: string;
   trigger: string;
   scope: string;
@@ -144,8 +144,8 @@ function AlertRow({ alert, onStatusChange }: { alert: Alert; onStatusChange: (id
   );
 }
 
-export const AlertsView = ({ alerts: initialAlerts }: { alerts?: Alert[] }) => {
-  const [alerts, setAlerts] = useState(initialAlerts?.length ? initialAlerts : ALERTS);
+export const AlertsView = () => {
+  const [alerts, setAlerts] = useState(ALERTS);
   const [statusFilter, setStatusFilter] = useState('all');
 
   const updateStatus = (id: string, status: AlertStatus) => {

@@ -13,6 +13,7 @@ export const OrbitShell = ({ children }: { children: ReactNode }) => {
   const { registerShortcut } = useKeyboard();
   const navigate = useNavigate();
   const workspacePath = useWorkspacePath();
+
   const [gPressed, setGPressed] = useState(false);
   const gRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -41,8 +42,8 @@ export const OrbitShell = ({ children }: { children: ReactNode }) => {
       if (gPressed) {
         e.preventDefault();
         const map: Record<string, string> = {
-          h: '', i: 'inbox', n: 'insights',
-          t: 'themes', a: 'alerts', s: 'settings',
+          h: '', i: 'insights', f: 'inbox',
+          a: 'alerts', m: 'reports', s: 'settings',
         };
         const dest = map[e.key.toLowerCase()];
         if (dest !== undefined) navigate(workspacePath(dest));
@@ -55,7 +56,7 @@ export const OrbitShell = ({ children }: { children: ReactNode }) => {
       window.removeEventListener('keydown', onKey);
       if (gRef.current) clearTimeout(gRef.current);
     };
-  }, [gPressed, navigate]);
+  }, [gPressed, navigate, workspacePath]);
 
   return (
     <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden', bgcolor: 'background.default' }}>

@@ -1,12 +1,51 @@
-/**
- * Pattern: SettingRow
- * 
- * Reusable setting control row following enterprise structure.
- * No card styling - pure structured row pattern.
- */
+import { Box, Typography } from '@mui/material';
 
-import { Box, Typography, Switch } from '@mui/material';
-import { color, spacing, typography, text, radius, transition } from '../../../shared/tokens/design-tokens';
+// Custom pill toggle — replaces MUI Switch which clips under aggressive ThemeProvider padding overrides.
+// States: off = grey track, on = indigo track; thumb is always white circle.
+
+interface PillToggleProps {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  disabled?: boolean;
+}
+
+const PillToggle = ({ checked, onChange, disabled = false }: PillToggleProps) => (
+  <Box
+    component="button"
+    role="switch"
+    aria-checked={checked}
+    disabled={disabled}
+    onClick={() => !disabled && onChange(!checked)}
+    sx={{
+      flexShrink: 0,
+      width: 36, height: 20,
+      borderRadius: '10px',
+      border: 'none',
+      cursor: disabled ? 'default' : 'pointer',
+      bgcolor: checked ? '#5B5FEF' : '#D8DCE5',
+      opacity: disabled ? 0.45 : 1,
+      position: 'relative',
+      transition: 'background-color 0.15s ease',
+      outline: 'none',
+      '&:focus-visible': {
+        boxShadow: '0 0 0 2px #fff, 0 0 0 4px #5B5FEF',
+      },
+      p: 0,
+    }}
+  >
+    {/* Thumb */}
+    <Box sx={{
+      position: 'absolute',
+      top: '2px',
+      left: checked ? '18px' : '2px',
+      width: 16, height: 16,
+      borderRadius: '50%',
+      bgcolor: '#fff',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.20)',
+      transition: 'left 0.15s ease',
+    }} />
+  </Box>
+);
 
 interface SettingRowProps {
   label: string;
@@ -26,77 +65,25 @@ export const SettingRow = ({
   onChange,
   disabled = false,
   helperText,
-}: SettingRowProps) => {
-  const isChecked = checked ?? value ?? false;
-
-  return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: { xs: 'column', sm: 'row' },
-        alignItems: { xs: 'stretch', sm: 'flex-start' },
-        justifyContent: 'space-between',
-        py: spacing[16],
-        px: spacing[20],
-        borderRadius: radius.base,
-        transition: `background-color ${transition.duration.fast} ${transition.easing.base}`,
-        '&:hover': {
-          bgcolor: '#F9FAFB',
-        },
-      }}
-    >
-      {/* Label and description */}
-      <Box sx={{ flex: 1, pr: { xs: 0, sm: spacing[24] } }}>
-        <Typography
-          sx={{
-            fontSize: typography.fontSize.md,
-            fontWeight: typography.fontWeight.medium,
-            color: text.primary,
-            mb: spacing[4],
-            lineHeight: typography.lineHeight.tight,
-          }}
-        >
-          {label}
+}: SettingRowProps) => (
+  <Box sx={{
+    display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+    py: '14px', px: '16px', gap: '16px',
+    '&:hover': { bgcolor: 'rgba(0,0,0,0.015)' },
+  }}>
+    <Box sx={{ flex: 1 }}>
+      <Typography sx={{ fontSize: 13, fontWeight: 500, color: '#171A21', mb: '2px', lineHeight: 1.4 }}>
+        {label}
+      </Typography>
+      <Typography sx={{ fontSize: 12, color: '#9299A6', lineHeight: 1.5 }}>
+        {description}
+      </Typography>
+      {helperText && (
+        <Typography sx={{ fontSize: 11, color: '#9299A6', lineHeight: 1.5, mt: '4px' }}>
+          {helperText}
         </Typography>
-        <Typography
-          sx={{
-            fontSize: typography.fontSize.sm,
-            color: text.secondary,
-            lineHeight: typography.lineHeight.base,
-          }}
-        >
-          {description}
-        </Typography>
-        {helperText && (
-          <Typography
-            sx={{
-              fontSize: typography.fontSize.sm,
-              color: text.tertiary,
-              lineHeight: typography.lineHeight.base,
-              mt: spacing[4],
-            }}
-          >
-            {helperText}
-          </Typography>
-        )}
-      </Box>
-
-      {/* Toggle control */}
-      <Switch
-        checked={isChecked}
-        onChange={(e) => onChange(e.target.checked)}
-        disabled={disabled}
-        sx={{
-          alignSelf: { xs: 'flex-start', sm: 'center' },
-          mt: { xs: spacing[8], sm: 0 },
-          '& .MuiSwitch-switchBase.Mui-checked': {
-            color: color.functional.primary,
-          },
-          '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-            bgcolor: color.functional.primary,
-          },
-        }}
-      />
+      )}
     </Box>
-  );
-};
+    <PillToggle checked={checked ?? value ?? false} onChange={onChange} disabled={disabled} />
+  </Box>
+);
