@@ -1,10 +1,18 @@
 import { ConnectionsView } from '@/features/connections/ConnectionsView';
 import { OrbitReviewsPage } from './OrbitReviewsPage';
+import type { ReviewSourceAccount } from '@/types';
+import type { IntegrationCatalogItem, IntegrationConnection } from '@/features/connections/ConnectionsView';
 
-export default function Connections() {
+type ConnectionsProps = {
+  sourceAccounts?: ReviewSourceAccount[];
+  integrationCatalog?: IntegrationCatalogItem[];
+  integrationConnections?: IntegrationConnection[];
+};
+
+export default function Connections(props: ConnectionsProps) {
   return (
     <OrbitReviewsPage title="Integrations">
-      <ConnectionsView />
+      <ConnectionsView {...props} />
     </OrbitReviewsPage>
   );
 }

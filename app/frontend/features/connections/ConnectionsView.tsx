@@ -3,6 +3,7 @@
  * Replaces the previously separate Sources and Integrations views.
  */
 import { useState } from 'react';
+import { router } from '@inertiajs/react';
 import {
   Box, Typography, Tabs, Tab, Divider, alpha, Chip, Button,
   IconButton, Tooltip, Dialog, DialogTitle, DialogContent,
@@ -17,12 +18,20 @@ import {
 } from '@mui/icons-material';
 import { color, text, radius } from '../../shared/tokens/design-tokens';
 import { toast } from 'sonner';
+import type { ReviewSourceAccount } from '@/types';
+import { useWorkspace } from '@/providers/WorkspaceProvider';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type SyncStatus = 'healthy' | 'syncing' | 'delayed' | 'action_required' | 'disconnected';
 type DestStatus = 'connected' | 'disconnected' | 'error';
 type WebhookStatus = 'healthy' | 'failing' | 'inactive';
+type CredentialField = {
+  name: string;
+  label?: string;
+  type?: string;
+  required?: boolean;
+};
 
 // ─── Review Sources data ──────────────────────────────────────────────────────
 
@@ -30,38 +39,116 @@ interface SourceAccount {
   id: string; name: string; status: SyncStatus;
   lastSync: string; latestReview: string;
   recordsSynced: number; syncFrequency: string; error?: string;
+  connectionId?: number | string;
 }
-interface SourceProvider { id: string; name: string; category: string; accounts: SourceAccount[] }
+interface SourceProvider {
+  id: string;
+  name: string;
+  category: string;
+  authType: string;
+  setupMode: string;
+  setupNote?: string;
+  securityNote?: string;
+  docsUrl?: string;
+  credentialFields: CredentialField[];
+  status: string;
+  accounts: SourceAccount[];
+}
 
-const SOURCES: SourceProvider[] = [
+export type IntegrationCatalogItem = {
+  id: string;
+  name: string;
+  description?: string;
+  category?: string;
+  authType?: string;
+  auth_type?: string;
+  setupMode?: string;
+  setup_mode?: string;
+  setupNote?: string;
+  setup_note?: string;
+  securityNote?: string;
+  security_note?: string;
+  docsUrl?: string;
+  docs_url?: string;
+  credentialFields?: CredentialField[];
+  credential_fields?: CredentialField[];
+  status?: string;
+  configured?: boolean;
+};
+
+export type IntegrationConnection = {
+  id: number | string;
+  integrationId: string;
+  status: string;
+  connectedAt?: string;
+  lastSync?: string;
+  lastTestedAt?: string;
+  healthStatus?: string;
+  error?: string;
+  accountName?: string;
+  settings?: Record<string, unknown>;
+};
+
+type SetupRequiredResponse = {
+  setupRequired: true;
+  providerKey?: string;
+  providerName?: string;
+  message?: string;
+  redirectUri?: string;
+  redirect_uri?: string;
+  webhookUrl?: string;
+  webhook_url?: string;
+  fields?: CredentialField[];
+};
+
+type ConnectResponse = {
+  redirect_url?: string;
+  redirectUrl?: string;
+  props?: {
+    provider_key?: string;
+    providerKey?: string;
+    auth_strategy?: string;
+    authStrategy?: string;
+    fields?: CredentialField[];
+  };
+  error?: string;
+} | SetupRequiredResponse;
+
+type ConnectionsViewProps = {
+  sourceAccounts?: ReviewSourceAccount[];
+  integrationCatalog?: IntegrationCatalogItem[];
+  integrationConnections?: IntegrationConnection[];
+};
+
+const FALLBACK_SOURCES: SourceProvider[] = [
   {
-    id: 'google', name: 'Google Business Profile', category: 'Business reviews',
+    id: 'google_business', name: 'Google Business Profile', category: 'Business reviews', authType: 'oauth', setupMode: 'oauth', credentialFields: [], status: 'disconnected',
     accounts: [
       { id: 'g-us', name: 'US Retail Locations', status: 'healthy', lastSync: '1 min ago', latestReview: 'Jun 16, 2:31 PM', recordsSynced: 18420, syncFrequency: 'Real-time' },
       { id: 'g-ca', name: 'Canada Retail Locations', status: 'delayed', lastSync: '3h ago', latestReview: 'Jun 16, 9:14 AM', recordsSynced: 2140, syncFrequency: 'Every 30 min', error: 'API rate limit reached. Retrying in 22 min.' },
     ],
   },
   {
-    id: 'appstore', name: 'Apple App Store', category: 'App reviews',
+    id: 'apple_app_store', name: 'Apple App Store', category: 'App reviews', authType: 'api_key', setupMode: 'jwt_private_key', credentialFields: [], status: 'disconnected',
     accounts: [
       { id: 'as-mobile', name: 'Orbit Mobile', status: 'healthy', lastSync: '3 min ago', latestReview: 'Jun 16, 2:14 PM', recordsSynced: 11203, syncFrequency: 'Every 15 min' },
       { id: 'as-consumer', name: 'Orbit Consumer', status: 'action_required', lastSync: '48h ago', latestReview: 'Jun 14, 8:03 AM', recordsSynced: 4210, syncFrequency: 'Every 15 min', error: 'Authentication expired. Re-authenticate in App Store Connect.' },
     ],
   },
   {
-    id: 'playstore', name: 'Google Play', category: 'App reviews',
+    id: 'google_play', name: 'Google Play', category: 'App reviews', authType: 'api_key', setupMode: 'service_account', credentialFields: [], status: 'disconnected',
     accounts: [
       { id: 'pl-main', name: 'Orbit Mobile (Android)', status: 'healthy', lastSync: '3 min ago', latestReview: 'Jun 16, 1:52 PM', recordsSynced: 8940, syncFrequency: 'Every 15 min' },
     ],
   },
   {
-    id: 'g2', name: 'G2', category: 'SaaS reviews',
+    id: 'g2', name: 'G2', category: 'SaaS reviews', authType: 'api_key', setupMode: 'api_key', credentialFields: [], status: 'disconnected',
     accounts: [
       { id: 'g2-main', name: 'Orbit Reviews listing', status: 'healthy', lastSync: '5 min ago', latestReview: 'Jun 16, 12:18 PM', recordsSynced: 4210, syncFrequency: 'Every hour' },
     ],
   },
   {
-    id: 'trustpilot', name: 'Trustpilot', category: 'SaaS reviews',
+    id: 'trustpilot', name: 'Trustpilot', category: 'SaaS reviews', authType: 'api_key', setupMode: 'api_key', credentialFields: [], status: 'disconnected',
     accounts: [
       { id: 'tp-main', name: 'orbit.reviews', status: 'syncing', lastSync: 'Syncing now…', latestReview: 'Jun 16, 11:34 AM', recordsSynced: 3180, syncFrequency: 'Every hour' },
     ],
@@ -72,6 +159,157 @@ const AVAILABLE_SOURCES = [
   'Capterra', 'Yelp', 'Tripadvisor', 'Amazon', 'Shopify', 'Yotpo', 'Bazaarvoice',
 ];
 
+const titleize = (value?: string) =>
+  (value || 'Unknown')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, char => char.toUpperCase());
+
+const relativeTime = (value?: string) => {
+  if (!value) return 'Never';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  const diff = Date.now() - date.getTime();
+  const minutes = Math.max(1, Math.round(diff / 60000));
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 48) return `${hours}h ago`;
+  return `${Math.round(hours / 24)}d ago`;
+};
+
+const formatDate = (value?: string) => {
+  if (!value) return 'None yet';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(date);
+};
+
+const toSyncStatus = (account: ReviewSourceAccount): SyncStatus => {
+  if (account.authStatus && account.authStatus !== 'connected') return 'action_required';
+  if (account.status === 'syncing') return 'syncing';
+  if (account.status === 'delayed') return 'delayed';
+  if (account.status === 'disconnected') return 'disconnected';
+  return 'healthy';
+};
+
+const connectionStatus = (connection: IntegrationConnection): SyncStatus => {
+  if (connection.error || connection.healthStatus === 'unhealthy' || connection.status === 'error') return 'action_required';
+  if (connection.status === 'syncing') return 'syncing';
+  if (connection.status === 'disconnected') return 'disconnected';
+  if (connection.status === 'pending') return 'delayed';
+  return 'healthy';
+};
+
+const normalizeProvider = (provider: IntegrationCatalogItem): SourceProvider => ({
+  id: provider.id,
+  name: provider.name,
+  category: titleize(provider.category || 'reviews').replace('Reviews', 'Review source'),
+  authType: provider.authType || provider.auth_type || 'api_key',
+  setupMode: provider.setupMode || provider.setup_mode || provider.authType || provider.auth_type || 'api_key',
+  setupNote: provider.setupNote || provider.setup_note,
+  securityNote: provider.securityNote || provider.security_note,
+  docsUrl: provider.docsUrl || provider.docs_url,
+  credentialFields: provider.credentialFields || provider.credential_fields || [],
+  status: provider.status || 'disconnected',
+  accounts: [],
+});
+
+const sourceProvidersFromProps = (
+  catalog?: IntegrationCatalogItem[],
+  connections?: IntegrationConnection[],
+  accounts?: ReviewSourceAccount[],
+): SourceProvider[] => {
+  if (!catalog?.length && !connections?.length && !accounts?.length) return FALLBACK_SOURCES;
+
+  const providers = new Map<string, SourceProvider>();
+
+  catalog?.forEach(item => {
+    providers.set(item.id, normalizeProvider(item));
+  });
+
+  connections?.forEach(connection => {
+    const providerId = connection.integrationId;
+    const provider = providers.get(providerId) || {
+      id: providerId,
+      name: titleize(providerId),
+      category: 'Review source',
+      authType: 'api_key',
+      setupMode: 'api_key',
+      credentialFields: [],
+      status: connection.status,
+      accounts: [],
+    };
+
+    provider.accounts.push({
+      id: `connection-${connection.id}`,
+      name: connection.accountName || `${provider.name} account`,
+      status: connectionStatus(connection),
+      lastSync: relativeTime(connection.lastSync),
+      latestReview: connection.lastSync ? formatDate(connection.lastSync) : 'None yet',
+      recordsSynced: Number(connection.settings?.records_count || 0),
+      syncFrequency: String(connection.settings?.sync_frequency || 'Managed by OrbitConnect'),
+      error: connection.error,
+      connectionId: connection.id,
+    });
+
+    provider.status = connection.status || provider.status;
+    providers.set(providerId, provider);
+  });
+
+  accounts?.forEach(account => {
+    const providerId = account.provider || 'custom';
+    const provider = providers.get(providerId) || {
+      id: providerId,
+      name: account.sourceName || titleize(providerId),
+      category: 'Review source',
+      authType: 'api_key',
+      setupMode: 'api_key',
+      credentialFields: [],
+      status: account.status,
+      accounts: [],
+    };
+
+    if (provider.accounts.some(existing => existing.name === account.name)) {
+      providers.set(providerId, provider);
+      return;
+    }
+
+    provider.accounts.push({
+      id: String(account.id),
+      name: account.name,
+      status: toSyncStatus(account),
+      lastSync: relativeTime(account.lastSyncAt),
+      latestReview: formatDate(account.latestReviewAt),
+      recordsSynced: account.recordsCount || 0,
+      syncFrequency: account.syncFrequency || 'Configured',
+      error: account.authStatus && account.authStatus !== 'connected' ? titleize(account.authStatus) : undefined,
+    });
+
+    providers.set(providerId, provider);
+  });
+
+  return Array.from(providers.values());
+};
+
+const csrfToken = () => document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || '';
+
+async function requestJson<T>(url: string, options: RequestInit = {}): Promise<T> {
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': csrfToken(),
+      ...(options.headers || {}),
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.error || data.message || 'Request failed');
+  }
+  return data as T;
+}
+
 const statusMeta: Record<SyncStatus, { label: string; icon: React.ReactNode; color: string }> = {
   healthy:         { label: 'Healthy',         icon: <OkIcon sx={{ fontSize: 13, color: color.functional.success }} />,  color: color.functional.success },
   syncing:         { label: 'Syncing',          icon: <SyncIcon sx={{ fontSize: 13, color: color.functional.info }} />,   color: color.functional.info },
@@ -80,7 +318,12 @@ const statusMeta: Record<SyncStatus, { label: string; icon: React.ReactNode; col
   disconnected:    { label: 'Disconnected',     icon: <ErrIcon sx={{ fontSize: 13, color: text.tertiary }} />,             color: text.tertiary },
 };
 
-function SourceAccountRow({ account }: { account: SourceAccount }) {
+function SourceAccountRow({ account, onSync, onDisconnect, busy }: {
+  account: SourceAccount;
+  onSync: (account: SourceAccount) => void;
+  onDisconnect: (account: SourceAccount) => void;
+  busy: boolean;
+}) {
   const sm = statusMeta[account.status];
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', px: '20px', py: '10px', gap: '12px', borderBottom: '1px solid rgba(0,0,0,0.05)', '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' } }}>
@@ -103,20 +346,22 @@ function SourceAccountRow({ account }: { account: SourceAccount }) {
       <Typography sx={{ fontSize: 11, color: text.tertiary, width: 110, flexShrink: 0, textAlign: 'right' }}>{account.syncFrequency}</Typography>
       <Box sx={{ display: 'flex', gap: '2px', width: 70, flexShrink: 0, justifyContent: 'flex-end' }}>
         {account.status === 'action_required' ? (
-          <Button size="small" onClick={() => toast.success('Redirecting to authentication…')}
+          <Button size="small" disabled={!account.connectionId || busy} onClick={() => onSync(account)}
             sx={{ fontSize: 10, height: 24, px: '8px', bgcolor: color.functional.error, color: '#fff', '&:hover': { bgcolor: '#B91C1C' } }}>
             Fix
           </Button>
         ) : (
           <Tooltip title="Force sync">
-            <IconButton size="small" onClick={() => toast.success('Sync triggered')} sx={{ color: text.tertiary }}>
+            <span>
+            <IconButton size="small" disabled={!account.connectionId || busy} onClick={() => onSync(account)} sx={{ color: text.tertiary }}>
               <SyncIcon sx={{ fontSize: 14 }} />
             </IconButton>
+            </span>
           </Tooltip>
         )}
-        <Tooltip title="Settings">
-          <IconButton size="small" onClick={() => toast.info('Source settings')} sx={{ color: text.tertiary }}>
-            <SettingsIcon sx={{ fontSize: 14 }} />
+        <Tooltip title="Disconnect">
+          <IconButton size="small" disabled={!account.connectionId || busy} onClick={() => onDisconnect(account)} sx={{ color: text.tertiary }}>
+            <DeleteIcon sx={{ fontSize: 14 }} />
           </IconButton>
         </Tooltip>
       </Box>
@@ -124,11 +369,154 @@ function SourceAccountRow({ account }: { account: SourceAccount }) {
   );
 }
 
-function ReviewSourcesTab() {
+function ReviewSourcesTab({ sourceAccounts, integrationCatalog, integrationConnections }: ConnectionsViewProps) {
+  const { workspace } = useWorkspace();
   const [connectOpen, setConnectOpen] = useState(false);
-  const [connectTarget, setConnectTarget] = useState('');
-  const totalConnected = SOURCES.reduce((s, p) => s + p.accounts.length, 0);
-  const actionRequired = SOURCES.flatMap(p => p.accounts).filter(a => a.status === 'action_required').length;
+  const [setupOpen, setSetupOpen] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState<SourceProvider | null>(null);
+  const [fields, setFields] = useState<CredentialField[]>([]);
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [setupValues, setSetupValues] = useState<Record<string, string>>({});
+  const [setupInfo, setSetupInfo] = useState<SetupRequiredResponse | null>(null);
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+  const sources = sourceProvidersFromProps(integrationCatalog, integrationConnections, sourceAccounts);
+  const connectedProviderIds = new Set(sources.filter(source => source.accounts.length > 0).map(source => source.id));
+  const availableSources = integrationCatalog?.length
+    ? integrationCatalog.filter(provider => !connectedProviderIds.has(provider.id)).map(provider => provider.name)
+    : AVAILABLE_SOURCES;
+  const totalConnected = sources.reduce((s, p) => s + p.accounts.length, 0);
+  const actionRequired = sources.flatMap(p => p.accounts).filter(a => a.status === 'action_required').length;
+  const workspaceId = workspace?.id;
+
+  const closeConnectDialog = () => {
+    setConnectOpen(false);
+    setSelectedProvider(null);
+    setFields([]);
+    setValues({});
+  };
+
+  const openCredentialDialog = (provider: SourceProvider, credentialFields = provider.credentialFields) => {
+    setSelectedProvider(provider);
+    setFields(credentialFields);
+    setValues({});
+    setConnectOpen(true);
+  };
+
+  const connectProvider = async (provider: SourceProvider) => {
+    if (!workspaceId) {
+      toast.error('Workspace is required before connecting integrations.');
+      return;
+    }
+
+    setBusyKey(provider.id);
+    try {
+      const result = await requestJson<ConnectResponse>(`/w/${workspaceId}/integrations/${provider.id}/connect`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+
+      const redirectUrl =
+        ('redirectUrl' in result ? result.redirectUrl : undefined) ||
+        ('redirect_url' in result ? result.redirect_url : undefined);
+      if (redirectUrl) {
+        window.location.assign(redirectUrl);
+        return;
+      }
+
+      if ('setupRequired' in result && result.setupRequired) {
+        setSelectedProvider(provider);
+        setSetupInfo(result);
+        setSetupValues({});
+        setSetupOpen(true);
+        return;
+      }
+
+      if ('props' in result && result.props) {
+        openCredentialDialog(provider, result.props.fields || provider.credentialFields);
+        return;
+      }
+
+      toast.error(('error' in result && result.error) || 'Unable to start integration setup.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to start integration setup.');
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const submitCredentials = async () => {
+    if (!workspaceId || !selectedProvider) return;
+
+    setBusyKey(selectedProvider.id);
+    try {
+      await requestJson(`/w/${workspaceId}/integrations/${selectedProvider.id}/credentials`, {
+        method: 'POST',
+        body: JSON.stringify(values),
+      });
+      toast.success(`${selectedProvider.name} connected.`);
+      closeConnectDialog();
+      router.reload();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to submit credentials.');
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const submitProviderApp = async () => {
+    if (!workspaceId || !selectedProvider) return;
+
+    setBusyKey(selectedProvider.id);
+    try {
+      await requestJson(`/w/${workspaceId}/integrations/${selectedProvider.id}/provider_app`, {
+        method: 'POST',
+        body: JSON.stringify(setupValues),
+      });
+      toast.success(`${selectedProvider.name} OAuth app configured.`);
+      setSetupOpen(false);
+      setSetupInfo(null);
+      await connectProvider(selectedProvider);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to save OAuth app.');
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const syncAccount = async (account: SourceAccount) => {
+    if (!workspaceId || !account.connectionId) return;
+
+    setBusyKey(String(account.connectionId));
+    try {
+      await requestJson(`/w/${workspaceId}/integrations/connections/${account.connectionId}/sync`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+      toast.success('Sync started.');
+      router.reload();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to start sync.');
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const disconnectAccount = async (account: SourceAccount) => {
+    if (!workspaceId || !account.connectionId) return;
+
+    setBusyKey(String(account.connectionId));
+    try {
+      await requestJson(`/w/${workspaceId}/integrations/connections/${account.connectionId}`, {
+        method: 'DELETE',
+      });
+      toast.success('Disconnected successfully.');
+      router.reload();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to disconnect.');
+    } finally {
+      setBusyKey(null);
+    }
+  };
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', flex: 1 }}>
@@ -161,19 +549,33 @@ function ReviewSourcesTab() {
 
       {/* Provider groups */}
       <Box sx={{ flex: 1, overflow: 'auto', '&::-webkit-scrollbar': { width: 5 } }}>
-        {SOURCES.map(provider => (
+        {sources.map(provider => (
           <Box key={provider.id}>
             <Box sx={{ display: 'flex', alignItems: 'center', px: '20px', py: '8px', bgcolor: 'rgba(0,0,0,0.02)', borderBottom: '1px solid rgba(0,0,0,0.06)', borderTop: '1px solid rgba(0,0,0,0.04)', gap: '10px' }}>
               <Typography sx={{ fontSize: 12, fontWeight: 600, color: text.primary, flex: 1 }}>{provider.name}</Typography>
               <Chip size="small" label={provider.category}
                 sx={{ height: 16, fontSize: 10, bgcolor: 'rgba(0,0,0,0.05)', color: text.tertiary, '& .MuiChip-label': { px: '6px' } }} />
-              <Button size="small" onClick={() => toast.success(`New ${provider.name} account setup`)}
+              <Button size="small" disabled={busyKey === provider.id} onClick={() => connectProvider(provider)}
                 startIcon={<AddIcon sx={{ fontSize: 12 }} />}
                 sx={{ fontSize: 10, height: 24, px: '8px', color: text.secondary, border: '1px solid rgba(0,0,0,0.11)' }}>
                 Add account
               </Button>
             </Box>
-            {provider.accounts.map(account => <SourceAccountRow key={account.id} account={account} />)}
+            {provider.accounts.length > 0 ? (
+              provider.accounts.map(account => (
+                <SourceAccountRow
+                  key={account.id}
+                  account={account}
+                  onSync={syncAccount}
+                  onDisconnect={disconnectAccount}
+                  busy={busyKey === String(account.connectionId)}
+                />
+              ))
+            ) : (
+              <Box sx={{ px: '20px', py: '18px', borderBottom: '1px solid rgba(0,0,0,0.05)', color: text.tertiary }}>
+                <Typography sx={{ fontSize: 12 }}>No accounts connected yet.</Typography>
+              </Box>
+            )}
           </Box>
         ))}
 
@@ -183,34 +585,83 @@ function ReviewSourcesTab() {
             Available to connect
           </Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            {AVAILABLE_SOURCES.map(name => (
-              <Box key={name} onClick={() => { setConnectTarget(name); setConnectOpen(true); }}
+            {availableSources.map(name => {
+              const provider = sources.find(source => source.name === name) ||
+                integrationCatalog?.map(normalizeProvider).find(source => source.name === name);
+
+              return (
+              <Box key={name} onClick={() => provider && connectProvider(provider)}
                 sx={{ display: 'flex', alignItems: 'center', gap: '8px', px: '12px', py: '7px', border: '1px solid rgba(0,0,0,0.10)', borderRadius: '7px', cursor: 'pointer', bgcolor: 'rgba(0,0,0,0.02)', '&:hover': { bgcolor: 'rgba(0,0,0,0.04)', borderColor: 'rgba(0,0,0,0.18)' }, transition: 'all 0.1s' }}>
                 <Typography sx={{ fontSize: 12, color: text.secondary }}>{name}</Typography>
               </Box>
-            ))}
+              );
+            })}
           </Box>
         </Box>
       </Box>
 
       {/* Connect dialog */}
-      <Dialog open={connectOpen} onClose={() => { setConnectOpen(false); setConnectTarget(''); }} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: '10px' } }}>
-        <DialogTitle sx={{ fontSize: 14, fontWeight: 700 }}>Connect {connectTarget || 'review source'}</DialogTitle>
+      <Dialog open={connectOpen} onClose={closeConnectDialog} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: '10px' } }}>
+        <DialogTitle sx={{ fontSize: 14, fontWeight: 700 }}>Connect {selectedProvider?.name || 'review source'}</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '8px !important' }}>
-          {!connectTarget && (
-            <TextField label="Source" placeholder="e.g., Capterra" fullWidth size="small" onChange={e => setConnectTarget(e.target.value)} />
+          {selectedProvider?.securityNote && (
+            <Box sx={{ px: '12px', py: '10px', bgcolor: 'rgba(0,0,0,0.03)', borderRadius: '7px', border: '1px solid rgba(0,0,0,0.08)' }}>
+              <Typography sx={{ fontSize: 11, color: text.secondary, lineHeight: 1.6 }}>
+                {selectedProvider.securityNote}
+              </Typography>
+            </Box>
           )}
-          <TextField label="API key" placeholder="Enter API credentials" fullWidth size="small" type="password" />
-          <Box sx={{ px: '12px', py: '10px', bgcolor: 'rgba(0,0,0,0.03)', borderRadius: '7px', border: '1px solid rgba(0,0,0,0.08)' }}>
-            <Typography sx={{ fontSize: 11, color: text.secondary, lineHeight: 1.6 }}>
-              Orbit requests read-only access. Credentials are encrypted at rest and never used to write to source platforms.
-            </Typography>
-          </Box>
+          {fields.map(field => (
+            <TextField
+              key={field.name}
+              label={field.label || titleize(field.name)}
+              required={field.required}
+              fullWidth
+              size="small"
+              type={field.type === 'password' ? 'password' : 'text'}
+              multiline={field.name.includes('json') || field.name.includes('key')}
+              minRows={field.name.includes('json') || field.name.includes('key') ? 3 : undefined}
+              value={values[field.name] || ''}
+              onChange={event => setValues(prev => ({ ...prev, [field.name]: event.target.value }))}
+            />
+          ))}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2.5 }}>
-          <Button onClick={() => { setConnectOpen(false); setConnectTarget(''); }} sx={{ color: text.secondary }}>Cancel</Button>
-          <Button variant="contained" onClick={() => { toast.success(`${connectTarget} connected — importing reviews`); setConnectOpen(false); setConnectTarget(''); }}
+          <Button onClick={closeConnectDialog} sx={{ color: text.secondary }}>Cancel</Button>
+          <Button variant="contained" disabled={!selectedProvider || busyKey === selectedProvider.id} onClick={submitCredentials}
             sx={{ bgcolor: color.functional.primary }}>Connect</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={setupOpen} onClose={() => setSetupOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: '10px' } }}>
+        <DialogTitle sx={{ fontSize: 14, fontWeight: 700 }}>Configure {selectedProvider?.name} OAuth app</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '8px !important' }}>
+          <Typography sx={{ fontSize: 12, color: text.secondary, lineHeight: 1.6 }}>
+            {setupInfo?.message || selectedProvider?.setupNote || 'Add the provider app credentials before starting OAuth.'}
+          </Typography>
+          {setupInfo?.redirectUri && (
+            <TextField label="Redirect URI" value={setupInfo.redirectUri} fullWidth size="small" InputProps={{ readOnly: true }} />
+          )}
+          {(setupInfo?.fields || [
+            { name: 'clientId', label: 'Client ID', type: 'text', required: true },
+            { name: 'clientSecret', label: 'Client secret', type: 'password', required: true },
+          ]).map(field => (
+            <TextField
+              key={field.name}
+              label={field.label || titleize(field.name)}
+              required={field.required}
+              fullWidth
+              size="small"
+              type={field.type === 'password' ? 'password' : 'text'}
+              value={setupValues[field.name] || ''}
+              onChange={event => setSetupValues(prev => ({ ...prev, [field.name]: event.target.value }))}
+            />
+          ))}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <Button onClick={() => setSetupOpen(false)} sx={{ color: text.secondary }}>Cancel</Button>
+          <Button variant="contained" disabled={!selectedProvider || busyKey === selectedProvider.id} onClick={submitProviderApp}
+            sx={{ bgcolor: color.functional.primary }}>Save and continue</Button>
         </DialogActions>
       </Dialog>
     </Box>
@@ -485,10 +936,11 @@ function WebhooksTab() {
 
 // ─── Main view ────────────────────────────────────────────────────────────────
 
-export const ConnectionsView = () => {
+export const ConnectionsView = ({ sourceAccounts, integrationCatalog, integrationConnections }: ConnectionsViewProps = {}) => {
   const [tab, setTab] = useState(0);
 
-  const actionRequired = SOURCES.flatMap(p => p.accounts).filter(a => a.status === 'action_required').length;
+  const sources = sourceProvidersFromProps(integrationCatalog, integrationConnections, sourceAccounts);
+  const actionRequired = sources.flatMap(p => p.accounts).filter(a => a.status === 'action_required').length;
 
   return (
     <Box sx={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', bgcolor: '#fff' }}>
@@ -515,7 +967,7 @@ export const ConnectionsView = () => {
       </Tabs>
 
       {/* Content */}
-      {tab === 0 && <ReviewSourcesTab />}
+      {tab === 0 && <ReviewSourcesTab sourceAccounts={sourceAccounts} integrationCatalog={integrationCatalog} integrationConnections={integrationConnections} />}
       {tab === 1 && <DestinationsTab />}
       {tab === 2 && <WebhooksTab />}
     </Box>

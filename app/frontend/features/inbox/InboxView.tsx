@@ -29,6 +29,7 @@ import { color, text, radius } from '../../shared/tokens/design-tokens';
 import { toast } from 'sonner';
 import { useNavigate, useWorkspacePath } from '@/hooks/useInertiaNavigation';
 import { MOCK_ISSUES } from '../../shared/mock/issues';
+import type { Review as ReviewResource } from '@/types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -180,6 +181,91 @@ const REVIEWS: Review[] = [
     linkedIssueId: 'i4',
     riskLabel: '$12K estimated conversion risk',
   },
+];
+
+type FeedbackViewProps = {
+  reviews?: ReviewResource[];
+};
+
+const sourceColors: Record<string, string> = {
+  google_business: '#4285F4',
+  google: '#4285F4',
+  apple_app_store: '#555',
+  app_store: '#555',
+  google_play: '#3DDC84',
+  g2: '#FF492C',
+  trustpilot: '#00B67A',
+};
+
+const titleize = (value?: string) =>
+  (value || 'Unknown')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, char => char.toUpperCase());
+
+const initials = (value: string) =>
+  value
+    .split(/\s+/)
+    .map(part => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
+const formatDate = (value?: string) => {
+  if (!value) return 'Unknown';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(date);
+};
+
+const toWorkflowStatus = (status?: string): WorkflowStatus => {
+  const allowed: WorkflowStatus[] = ['needs_response', 'response_posted', 'response_pending', 'publish_failed', 'escalated', 'closed', 'sync_delayed', 'deleted_at_source'];
+  return allowed.includes(status as WorkflowStatus) ? status as WorkflowStatus : 'needs_response';
+};
+
+const toSentiment = (sentiment?: string): Sentiment => {
+  const allowed: Sentiment[] = ['positive', 'negative', 'neutral', 'mixed'];
+  return allowed.includes(sentiment as Sentiment) ? sentiment as Sentiment : 'neutral';
+};
+
+const mapReview = (review: ReviewResource): Review => {
+  const sourceName = review.sourceAccountName || titleize(review.sourceProvider);
+  const context = [review.productName, review.locationName, review.region, review.platform, review.appVersion].filter(Boolean).join(' · ');
+  const body = review.body || review.title || 'No review text available.';
+  const tags = [review.analysis?.themes?.[0], review.platform, review.region].filter(Boolean) as string[];
+
+  return {
+    id: String(review.id),
+    sourceKey: review.sourceProvider,
+    sourceName,
+    sourceAbbr: initials(sourceName),
+    sourceColor: sourceColors[review.sourceProvider] || '#667085',
+    rating: review.rating,
+    title: review.title || body.slice(0, 80),
+    excerpt: body,
+    body,
+    author: review.authorName || 'Anonymous',
+    context: context || 'Imported feedback',
+    timestamp: formatDate(review.reviewedAt),
+    status: toWorkflowStatus(review.workflowStatus),
+    sentiment: toSentiment(review.sentiment),
+    tags: tags.length ? tags : [titleize(review.sentiment)],
+    unread: review.workflowStatus === 'needs_response',
+    relatedCount: review.analysis?.themes?.length || 0,
+    signals: (review.analysis?.themes || tags).slice(0, 4).map(label => ({ label })),
+    themes: review.analysis?.themes || tags,
+    suggestedReplyBasis: ['Original review', 'Workspace response policy'],
+    suggestedReply: review.analysis?.summary || 'Draft a helpful, on-brand response from this feedback.',
+  };
+};
+
+const buildSavedViews = (reviews: Review[]) => [
+  { id: 'all', label: 'All feedback', count: reviews.length },
+  { id: 'unread', label: 'Unread', count: reviews.filter(r => r.unread).length },
+  { id: 'needs_response', label: 'Needs response', count: reviews.filter(r => r.status === 'needs_response').length },
+  { id: 'assigned_me', label: 'Assigned to me', count: reviews.filter(r => r.assignee).length },
+  { id: 'escalated', label: 'Escalated', count: reviews.filter(r => r.status === 'escalated').length },
+  { id: 'negative', label: 'Negative', count: reviews.filter(r => r.sentiment === 'negative').length },
+  { id: 'recently_changed', label: 'Recently changed', count: reviews.filter(r => ['response_pending', 'publish_failed', 'sync_delayed'].includes(r.status)).length },
 ];
 
 // ─── Status config ────────────────────────────────────────────────────────────
@@ -667,13 +753,15 @@ function ContextPanel({ review }: { review: Review | null }) {
 
 // ─── Feedback View ────────────────────────────────────────────────────────────
 
-export const FeedbackView = () => {
+export const FeedbackView = ({ reviews: serverReviews }: FeedbackViewProps = {}) => {
   const [activeView, setActiveView]     = useState('all');
   const [selectedId, setSelectedId]     = useState<string | null>('r1');
   const [checked, setChecked]           = useState<string[]>([]);
   const [search, setSearch]             = useState('');
+  const reviews = serverReviews?.length ? serverReviews.map(mapReview) : REVIEWS;
+  const savedViews = buildSavedViews(reviews);
 
-  const filtered = REVIEWS.filter(r => {
+  const filtered = reviews.filter(r => {
     if (search && !r.title.toLowerCase().includes(search.toLowerCase()) && !r.excerpt.toLowerCase().includes(search.toLowerCase())) return false;
     if (activeView === 'needs_response' && r.status !== 'needs_response') return false;
     if (activeView === 'escalated' && r.status !== 'escalated') return false;
@@ -682,7 +770,7 @@ export const FeedbackView = () => {
     return true;
   });
 
-  const selectedReview = REVIEWS.find(r => r.id === selectedId) ?? null;
+  const selectedReview = reviews.find(r => r.id === selectedId) ?? filtered[0] ?? null;
 
   const toggleCheck = (id: string) => setChecked(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   const allChecked  = filtered.length > 0 && filtered.every(r => checked.includes(r.id));
@@ -699,7 +787,7 @@ export const FeedbackView = () => {
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: '1px', p: '6px' }}>
-          {SAVED_VIEWS.map(view => {
+          {savedViews.map(view => {
             const on = activeView === view.id;
             return (
               <Box key={view.id} onClick={() => setActiveView(view.id)}

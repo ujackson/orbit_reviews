@@ -1,10 +1,15 @@
 import { FeedbackView } from '@/features/inbox/InboxView';
 import { OrbitReviewsPage } from './OrbitReviewsPage';
+import type { Review } from '@/types';
 
-export default function Inbox() {
+type InboxProps = {
+  reviews?: Review[];
+};
+
+export default function Inbox(props: InboxProps) {
   return (
     <OrbitReviewsPage title="Feedback">
-      <FeedbackView />
+      <FeedbackView reviews={props.reviews} />
     </OrbitReviewsPage>
   );
 }

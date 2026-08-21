@@ -17,6 +17,18 @@ import {
 import { color, text } from '../../shared/tokens/design-tokens';
 import { useNavigate, useWorkspacePath } from '@/hooks/useInertiaNavigation';
 import { MOCK_ISSUES, MOCK_ACTIONS } from '../../shared/mock/issues';
+import type { ReviewInsight, ReviewSourceAccount } from '@/types';
+
+type HomeViewProps = {
+  metrics?: {
+    reviewCount: number;
+    needsResponseCount: number;
+    activeAlertCount: number;
+    activeAutomationCount: number;
+  };
+  recentInsights?: ReviewInsight[];
+  sourceAccounts?: ReviewSourceAccount[];
+};
 
 // ─── Palette shortcuts ────────────────────────────────────────────────────────
 const BR   = color.functional.primary;        // brand indigo
@@ -346,15 +358,16 @@ function LeaderRow({ row, isLast }: { row: typeof LEADERBOARD[0]; isLast: boolea
 
 // ─── Main view ────────────────────────────────────────────────────────────────
 
-export const OverviewView = () => {
+export const OverviewView = ({ metrics }: HomeViewProps = {}) => {
   const navigate  = useNavigate();
   const workspacePath = useWorkspacePath();
 
   const totalRisk      = MOCK_ISSUES.reduce((s, i) => s + i.riskAmount, 0);
   const openIssues     = MOCK_ISSUES.filter(i => !['closed', 'dismissed'].includes(i.status));
-  const criticalCount  = openIssues.filter(i => i.severity === 'critical').length;
+  const criticalCount  = metrics?.activeAlertCount ?? openIssues.filter(i => i.severity === 'critical').length;
   const highCount      = openIssues.filter(i => i.severity === 'high').length;
-  const overdueCount   = MOCK_ACTIONS.filter(a => a.status === 'overdue').length;
+  const overdueCount   = metrics?.needsResponseCount ?? MOCK_ACTIONS.filter(a => a.status === 'overdue').length;
+  const openIssueCount = metrics?.reviewCount ?? openIssues.length;
 
   // Correct singular/plural — spec §4
   const issueWord   = criticalCount === 1 ? 'issue' : 'issues';
@@ -423,7 +436,7 @@ export const OverviewView = () => {
               label: 'Revenue at risk',
               value: `$${(totalRisk / 1000).toFixed(0)}K`,
               valueColor: ER,
-              sub: `${openIssues.length} open issues · estimated`,
+              sub: `${openIssueCount} open issues · estimated`,
             },
             {
               label: 'Revenue recovered',
@@ -434,7 +447,7 @@ export const OverviewView = () => {
             },
             {
               label: 'Issues open',
-              value: String(openIssues.length),
+              value: String(openIssueCount),
               valueColor: TXP,
               sub: `${criticalCount} critical · ${highCount} high`,
             },
